@@ -16,10 +16,13 @@ Search rules and resume data: `config/profile.json` (mirrored in the database at
 | Frederick County Workforce Services | `frederickworks.com/job-openings/` |
 | Frederick County Government, City of Frederick | Their governmentjobs.com boards. |
 | Dice | Dice connector, marketing titles, 21701 radius plus remote. |
+| Indeed, ZipRecruiter (direct search) | Their connectors, when connected: search each target title near 21701 and remote. Supplements the email alerts; the same job found both ways is one job. |
 
 Source notes from the first run (2026-09-23):
 
-- **USAJOBS.** The API needs a key (401 without one). Until one is added, POST to the site search
+- **USAJOBS.** With a key, call `https://data.usajobs.gov/api/search` with headers `Authorization-Key: $USAJOBS_API_KEY`,
+  `User-Agent: brennolan98@gmail.com` and `Host: data.usajobs.gov`, params `LocationName=Frederick, Maryland`,
+  `Radius=40`, plus a second pass with `RemoteIndicator=True`. Without the key (401), POST to the site search
   `https://www.usajobs.gov/Search/ExecuteSearch` with `{"Keyword": "...", "Page": "1"}`. Its location and remote
   filters are unreliable, so check each result's `LocationName` yourself.
 - **Frederick County Government** is `governmentjobs.com` agency `frederickmd`; **City of Frederick** is agency
