@@ -17,6 +17,17 @@ Search rules and resume data: `config/profile.json` (mirrored in the database at
 | Frederick County Government, City of Frederick | Their governmentjobs.com boards. |
 | Dice | Dice connector, marketing titles, 21701 radius plus remote. |
 
+Source notes from the first run (2026-09-23):
+
+- **USAJOBS.** The API needs a key (401 without one). Until one is added, POST to the site search
+  `https://www.usajobs.gov/Search/ExecuteSearch` with `{"Keyword": "...", "Page": "1"}`. Its location and remote
+  filters are unreliable, so check each result's `LocationName` yourself.
+- **Frederick County Government** is `governmentjobs.com` agency `frederickmd`; **City of Frederick** is agency
+  `frederick`. Pull the list with `GET /careers/home/index?agency=<slug>&page=<n>` and header
+  `X-Requested-With: XMLHttpRequest`, paging until no new titles appear.
+- **Orases** (watch list) is on BambooHR: `https://orases.bamboohr.com/careers/list` and
+  `/careers/<id>/detail` with `Accept: application/json`.
+
 ## 2. Filter
 
 Drop a job when any of these holds:
