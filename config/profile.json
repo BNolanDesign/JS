@@ -1,0 +1,95 @@
+{
+  "codename": "Operation Jetstream",
+  "candidate": {
+    "name": "Brennan Nolan",
+    "email": "brennolan98@gmail.com",
+    "phone": "(240) 626-7976",
+    "linkedin": "linkedin.com/in/bnolan98",
+    "website": "www.bnolandesign.com",
+    "yearsExperience": 7,
+    "education": "B.S. Advertising & Public Relations, Towson University (2020)",
+    "headline": "Brand and communications strategist: integrated campaigns, client management, multi-channel performance marketing.",
+    "history": [
+      { "title": "Partnership Development", "company": "Mission", "location": "Baltimore, MD", "dates": "Apr 2025 – Present" },
+      { "title": "Project Management", "company": "Mission", "location": "Baltimore, MD", "dates": "May 2023 – Apr 2025" },
+      { "title": "Client Experience Manager", "company": "The Harvey Agency", "location": "Baltimore, MD", "dates": "Oct 2022 – Apr 2023" },
+      { "title": "Senior Account Executive", "company": "Marriner Marketing", "location": "Columbia, MD", "dates": "Jul 2022 – Oct 2022" },
+      { "title": "Account Executive", "company": "Marriner Marketing", "location": "Columbia, MD", "dates": "Oct 2020 – Jul 2022" },
+      { "title": "Marketing Manager", "company": "Santoni's Marketplace & Catering", "location": "Glyndon, MD", "dates": "Jan 2020 – Oct 2020" },
+      { "title": "Marketing Coordinator", "company": "Santoni's Marketplace & Catering", "location": "Glyndon, MD", "dates": "Jun 2018 – Jan 2020" }
+    ],
+    "proofPoints": [
+      "Allocated multimillion-dollar budgets across media, creative and integrated campaigns (Marriner)",
+      "0.51% CTR on programmatic display, above industry benchmarks (Harvey)",
+      "+9% YoY email open rates via content changes and A/B testing (Marriner)",
+      "+17.5% social followers through data-driven storytelling (Santoni's)",
+      "Launched online ordering for a $1M business (Santoni's)",
+      "Led brand and campaign strategy for food & beverage clients (Marriner)",
+      "Leads prospect meetings and presentations that win new business (Mission)"
+    ],
+    "skills": [
+      "Integrated brand & communications", "Campaign strategy", "Client relationship management",
+      "Business development", "Creative direction", "Content production oversight",
+      "Project & budget management", "Email marketing & automation", "A/B testing",
+      "Programmatic advertising", "Paid search", "Paid social", "Social media marketing",
+      "Conversion rate optimization", "Website UX optimization", "Audience segmentation",
+      "Persona development", "Brand voice & governance", "Content architecture",
+      "Campaign reporting & executive insights", "Vendor & partner management",
+      "Stakeholder alignment", "Market research", "Media relations", "Issues communications",
+      "Content workflow & operations", "Product launches", "Community partnerships"
+    ]
+  },
+  "search": {
+    "homeZip": "21701",
+    "homeLabel": "Frederick, MD",
+    "maxDriveMinutes": 45,
+    "searchRadiusMiles": 40,
+    "includeRemote": true,
+    "includeHybrid": true,
+    "salaryFloor": 100000,
+    "salaryRule": "Keep if the top of the posted range is at least the floor. Keep jobs with no salary listed, marked not listed, after exhausting every source.",
+    "targetTitles": [
+      "Brand Manager", "Marketing Manager", "Product Manager", "Account Manager",
+      "Account Executive", "Account Strategist", "Performance Marketing Manager",
+      "Director of Marketing", "Marketing Director", "Brand Director"
+    ],
+    "seniority": "Include Senior variants and Director roles. Flag Director roles asking for 10+ years or large direct-report teams as a stretch.",
+    "titleRules": {
+      "accountRoles": "Account Executive / Account Manager / Account Strategist: keep only when the employer is an agency or the duties are campaigns, brand, strategy or client marketing.",
+      "productManager": "Product Manager: keep only when the description is mainly about marketing (positioning, go-to-market, campaigns, brand, customer insight). Drop engineering-led software PM roles.",
+      "salesExclusionSignals": [
+        "quota", "commission", "OTE", "on-target earnings", "cold call", "cold calling",
+        "prospecting", "hunter", "SDR", "BDR", "sales development", "business development representative",
+        "door-to-door", "uncapped earnings"
+      ]
+    },
+    "boosts": [
+      { "signal": "Food & beverage industry", "reason": "Direct F&B experience at Marriner and Santoni's" },
+      { "signal": "Company on the watch list", "reason": "Brennan asked to watch it" },
+      { "signal": "Agency (marketing, advertising, PR, digital)", "reason": "Agency account background" }
+    ],
+    "followUpAfterDays": 14,
+    "markNoResponseAfterDays": 30
+  },
+  "sources": {
+    "emailAlerts": {
+      "gmailAccount": "brennan@bnolandesign.com",
+      "label": "Jetstream",
+      "forwardedFrom": "brennolan98@gmail.com",
+      "senders": [
+        "jobs-noreply@linkedin.com", "jobalerts-noreply@linkedin.com", "jobs-listings@linkedin.com",
+        "indeedapply@indeed.com", "alert@indeed.com", "jobalert.indeed.com",
+        "noreply@glassdoor.com", "ziprecruiter.com"
+      ]
+    },
+    "direct": [
+      { "name": "Greenhouse boards (watch list companies)", "url": "https://boards-api.greenhouse.io/v1/boards/{token}/jobs?content=true" },
+      { "name": "Lever boards (watch list companies)", "url": "https://api.lever.co/v0/postings/{site}?mode=json" },
+      { "name": "Ashby boards (watch list companies)", "url": "https://api.ashbyhq.com/posting-api/job-board/{slug}" },
+      { "name": "USAJOBS", "url": "https://data.usajobs.gov/api/search" },
+      { "name": "Frederick County Workforce Services", "url": "https://www.frederickworks.com/job-openings/" },
+      { "name": "Frederick County Government / City of Frederick", "url": "https://www.governmentjobs.com/" },
+      { "name": "Dice (tech-leaning marketing roles)", "url": "Dice connector" }
+    ]
+  }
+}
