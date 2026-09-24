@@ -16,7 +16,10 @@ Brennan's personal job search system: a daily report of new marketing jobs withi
    boards. It drops sales roles, anything over a 45-minute drive, and anything paying under $100K, then scores
    what's left and posts only the new jobs.
 2. **Pick.** Brennan taps *Apply to this* or *Pass* on each card. Passed jobs never come back.
-3. **Research.** Claude researches each picked company and saves a profile on the job's tracker row.
+3. **Research.** Tapping *Apply to this* opens the posting in a new tab and has Claude research the company right on
+   the page (Indeed company data plus the posting), saving it to the job's tracker row. If that can't run, the next
+   morning run researches it with web search.
 4. **Track.** Stages, dates, 14-day follow-ups, contacts, interviews, salary and notes, with monthly stats.
-5. **Fill.** Using Claude in Chrome, Claude opens one tab per job and fills every page of the application from the
-   resume, writes a tailored cover letter, and stops before the final Submit button for Brennan to review.
+5. **Fill.** *Fill it out* on a picked job copies a ready-made request. Pasted into Claude in Chrome, Claude opens the
+   application, fills every page from the resume, writes a tailored cover letter, and stops before the final Submit
+   button for Brennan to review.

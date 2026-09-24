@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Operation Jetstream</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -218,6 +219,24 @@
   .rules dd { margin: 0; font-size: 14px; }
   .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 
+  /* Research */
+  .research { margin: 0 16px; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); border: 1px solid var(--line); font-size: 13.5px; color: var(--ink-2); }
+  .card .research { margin-top: 14px; }
+  .research b { color: var(--ink); }
+  .research.is-running { border-style: dashed; }
+  .research.is-failed { background: var(--warn-soft); border-color: transparent; color: var(--warn); }
+  .rblock { display: grid; gap: 10px; font: 14px/1.5 var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); }
+  .rblock p { margin: 0; }
+  .rblock h4 { margin: 0 0 2px; font: 600 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+  .rblock ul { margin: 0; padding-left: 18px; }
+  .rstats { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rmeta { font: 12px/1.4 var(--mono); color: var(--ink-3); }
+  .fillbox { margin: 0 16px 16px; }
+  .fillbox textarea, .edit .fillbox textarea { width: 100%; min-height: 120px; font: 13px/1.45 var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; color: var(--ink); }
+  .fillbox p { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
+  .edit .fillbox { margin: 0; }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
   .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--ground); padding: 10px 14px; border-radius: 8px; display: flex; gap: 14px; align-items: center; font-size: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, .25); z-index: 10; max-width: calc(100% - 32px); }
   .toast button { background: none; border: 0; color: inherit; font-weight: 700; text-decoration: underline; cursor: pointer; }
   @media (prefers-reduced-motion: no-preference) {
@@ -256,7 +275,7 @@
   var CLOSED = ["Accepted", "Declined", "Rejected", "No response", "Withdrawn"];
   var INTERVIEW_STAGES = ["Recruiter screen", "Interviewing", "Final round", "Offer"];
 
-  var state = { db: null, dbReady: false, dbError: "", jobs: [], companies: [], people: [], profile: null, runs: [], tab: "report" };
+  var state = { db: null, sample: null, mcp: null, researching: {}, fillOpen: {}, dbReady: false, dbError: "", jobs: [], companies: [], people: [], profile: null, runs: [], tab: "report" };
   var view = document.getElementById("view");
   var pendingRender = false;
 
@@ -379,11 +398,13 @@
     var actions = h("div", { class: "actions" }, [
       h("button", { type: "button", class: "btn primary" + (selected ? " on" : ""), disabled: example, "aria-pressed": String(selected), text: selected ? "✓ On the apply list" : "Apply to this", onclick: function () { if (!selected) selectJob(j); else unselectJob(j); } }),
       !selected ? h("button", { type: "button", class: "btn ghost", disabled: example, text: "Pass", onclick: function () { dismissJob(j); } }) : null,
-      j.url ? h("a", { class: "btn ghost link", href: example ? null : j.url, target: "_blank", rel: "noopener", text: "View posting ↗" }) : null
+      selected ? h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Fill it out", onclick: function () { toggleFill(j); } }) : null,
+      j.url ? h("a", { class: "btn ghost link", href: example ? null : j.url, target: "_blank", rel: "noopener", text: selected ? "Open application ↗" : "View posting ↗" }) : null
     ]);
     return h("article", { class: "card" + (selected ? " is-selected" : "") + (example ? " example" : ""), "aria-label": (j.title || "Job") + " at " + (j.company || "") }, [
       h("div", { class: "top" }, [h("div", { class: "co" }, coChips), h("div", { class: "score " + tier[0], title: "Match score out of 100" }, [h("span", { class: "v", text: String(j.matchScore != null ? j.matchScore : "–") }), h("span", { class: "t", text: tier[1] })]), h("h3", { text: j.title || "Untitled role" })]),
-      facts, fit, actions
+      facts, fit, selected && !example ? researchStatusLine(j) : null, actions,
+      selected && state.fillOpen[j.id] ? fillBox(j) : null
     ]);
   }
 
@@ -398,7 +419,7 @@
     if (!state.jobs.length) {
       view.appendChild(h("div", { class: "notice" }, [
         h("strong", { text: "No reports yet. " }),
-        "Each morning Claude gathers new marketing jobs within 45 minutes of 21701 (plus remote), drops sales roles and anything under $100K, scores each one against your resume, and adds them here. Tap Apply to this on the ones you want Claude to research and fill out, or Pass to hide a job for good. Here's what a card will look like:"
+        "Each morning Claude gathers new marketing jobs within 45 minutes of 21701 (plus remote), drops sales roles and anything under $100K, scores each one against your resume, and adds them here. Tap Apply to this on the ones you want: the posting opens in a new tab and Claude researches the company. Pass hides a job for good. Here's what a card will look like:"
       ]));
       view.appendChild(h("div", { class: "cards" }, [jobCard({
         company: "Example Foods Co.", title: "Senior Brand Manager", matchScore: 86, foodBev: true, watched: false,
@@ -424,9 +445,154 @@
   }
 
   function selectJob(j) {
+    // Open the posting in a new tab right away, while the tap still counts as a user gesture.
+    if (j.url) { try { var w = window.open(j.url, "_blank"); if (w) w.opener = null; } catch (e) {} }
     var patch = { status: "selected", selectedAt: today() };
     if (!j.stage) { patch.stage = "Researching"; patch.stageHistory = (j.stageHistory || []).concat([{ stage: "Researching", at: today() }]); }
-    writeJob(j.id, patch).then(function () { toast("Added to the apply list. Claude will research it next.", function () { writeJob(j.id, { status: "new" }); }); });
+    writeJob(j.id, patch).then(function () {
+      toast("On the apply list. Researching " + (j.company || "the company") + " now.", function () { writeJob(j.id, { status: "new" }); });
+      if (!(j.research && j.research.summary)) researchJob(j);
+    });
+  }
+
+  // ---------- research ----------
+  var PROFILE_FALLBACK = "Brennan Nolan: about 7 years in brand, campaign and client marketing (agency account executive, client experience manager, project management, partnership development). Food & beverage client background.";
+  function stripHtml(s) { return String(s || "").replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim(); }
+  function pct(yes, no) { var t = (yes || 0) + (no || 0); return t ? Math.round(100 * yes / t) + "%" : null; }
+  function candidateBrief() {
+    var c = (state.profile && state.profile.candidate) || null;
+    if (!c) return PROFILE_FALLBACK;
+    return [c.name + ", about " + c.yearsExperience + " years. " + (c.headline || ""),
+      "History: " + (c.history || []).map(function (x) { return x.title + ", " + x.company + " (" + x.dates + ")"; }).join("; "),
+      "Proof points: " + (c.proofPoints || []).join("; "),
+      "Skills: " + (c.skills || []).join(", "),
+      "Education: " + (c.education || "")].join("\n");
+  }
+  function indeedFacts(payload) {
+    var e = payload && payload.employerData; if (!e) return null;
+    var d = (e.dossier && e.dossier.employerDetails) || {}, u = e.ugcStats || {};
+    var r = u.ratings_in_1_to_5_scale || {};
+    var stats = [];
+    if (r.overall || r.OVERALL) stats.push("Rating " + (r.overall || r.OVERALL) + "/5");
+    var rec = u.recommendFriend ? pct(u.recommendFriend.yesCount, u.recommendFriend.noCount) : null; if (rec) stats.push(rec + " would recommend");
+    var pay = u.salarySatisfaction ? pct(u.salarySatisfaction.yesCount, u.salarySatisfaction.noCount) : null; if (pay) stats.push(pay + " say pay is fair");
+    if (u.ceo_approval_percentage && u.ceo_approval_percentage.approval_percentage != null) stats.push(Math.round(100 * u.ceo_approval_percentage.approval_percentage) + "% CEO approval");
+    if (u.interview && u.interview.difficulty) stats.push("Interview: " + String(u.interview.difficulty).toLowerCase() + ", " + String(u.interview.processLength || "").toLowerCase().replace(/_/g, " "));
+    return {
+      url: e.companyPageUrl || null,
+      stats: stats,
+      text: [
+        d.companyDescription ? "Description: " + stripHtml(d.companyDescription).slice(0, 900) : "",
+        d.employeesLocalizedLabel ? "Employees: " + d.employeesLocalizedLabel : "",
+        d.revenueLocalizedLabel ? "Revenue: " + d.revenueLocalizedLabel : "",
+        d.foundationDate && d.foundationDate.year ? "Founded: " + d.foundationDate.year : "",
+        d.addresses && d.addresses.length ? "HQ: " + d.addresses.join("; ") : "",
+        d.ceoName ? "CEO: " + d.ceoName.trim() : "",
+        stats.length ? "Employee stats: " + stats.join("; ") : "",
+        e.dossier && e.dossier.customContents ? "Employer's own page (promotional): " + stripHtml(e.dossier.customContents).slice(0, 2000) : ""
+      ].filter(Boolean).join("\n")
+    };
+  }
+  function researchJob(j) {
+    if (!state.db || state.researching[j.id]) return;
+    if (!state.sample) {
+      writeJob(j.id, { researchStatus: "queued", researchNote: "Claude can't research from this page right now; the next morning run will do it." });
+      return;
+    }
+    state.researching[j.id] = true;
+    writeJob(j.id, { researchStatus: "running", researchStartedAt: new Date().toISOString() });
+    render();
+    var indeed = null, indeedNote = "";
+    var step = state.mcp
+      ? state.mcp.callTool("Indeed", "get_company_data", { companyName: String(j.company || "").replace(/\s*\(.*?\)\s*/g, " ").trim(), jobTitle: j.title || undefined, language: "en", location: { country: "US", usState: null, usStateCode: null, usCity: null }, knowledgeCategories: { metadata: true, ratings: true, salaries: false } })
+          .then(function (res) { indeed = indeedFacts(res.payload); }, function (e) { indeedNote = "Indeed company data unavailable (" + (e && e.code || "error") + ")."; })
+      : Promise.resolve().then(function () { indeedNote = "Indeed company data not connected on this page."; });
+    step.then(function () {
+      var prompt = [
+        "You are preparing a job seeker for an application. Research the company and role below using ONLY: the job posting text, the Indeed company data (if given), and your own general knowledge of the company. You cannot browse. Anything from your general knowledge may be out of date: say so where it matters, and never invent specific recent news, people, numbers or funding.",
+        "Never claim experience the candidate doesn't have. Base fit points only on the candidate profile.",
+        "",
+        "Reply with ONLY a JSON object: {\"summary\": \"2-3 sentences: who they are and what this job really is\", \"company\": \"what they do, size, industry, customers\", \"culture\": \"what employees say, from the Indeed stats if given, else 'No employee data found'\", \"role\": \"what the job involves day to day, team and reporting line from the posting\", \"whyYou\": [\"3-4 specific ways the candidate's real experience matches\"], \"talkingPoints\": [\"3 things to mention in the cover letter or interview\"], \"questionsToAsk\": [\"3 smart questions for the interview\"], \"watchOuts\": [\"1-3 gaps or risks to prepare for\"]}",
+        "",
+        "JOB: " + (j.title || "") + " at " + (j.company || "") + " · " + (j.location || "") + " · " + (j.workplace || "") + " · " + (salaryText(j) || "salary not listed"),
+        "POSTING:\n" + String(j.description || j.fitSummary || "").slice(0, 7000),
+        "",
+        "INDEED COMPANY DATA:\n" + (indeed ? indeed.text : indeedNote || "none"),
+        "",
+        "CANDIDATE:\n" + candidateBrief()
+      ].join("\n");
+      return state.sample.json(prompt, { cache: false });
+    }).then(function (r) {
+      if (!r || typeof r !== "object" || !r.summary) throw { code: "invalid_json" };
+      var research = {
+        summary: String(r.summary), company: r.company ? String(r.company) : "", culture: r.culture ? String(r.culture) : "", role: r.role ? String(r.role) : "",
+        whyYou: (r.whyYou || []).map(String).slice(0, 5), talkingPoints: (r.talkingPoints || []).map(String).slice(0, 5),
+        questionsToAsk: (r.questionsToAsk || []).map(String).slice(0, 5), watchOuts: (r.watchOuts || []).map(String).slice(0, 4),
+        indeedUrl: indeed && indeed.url ? indeed.url : null, indeedStats: indeed ? indeed.stats : [],
+        sources: ["Job posting"].concat(indeed ? ["Indeed company data"] : []).concat(["Claude's general knowledge (may be dated)"]),
+        generatedAt: new Date().toISOString(), generatedBy: "tracker page"
+      };
+      var cur = state.jobs.filter(function (x) { return x.id === j.id; })[0] || j;
+      var patch = { research: research, researchStatus: "done", researchNote: "" };
+      if ((cur.stage || "Researching") === "Researching") { patch.stage = "Ready to apply"; patch.stageHistory = (cur.stageHistory || []).concat([{ stage: "Ready to apply", at: today() }]); }
+      return state.db.doc("jobs/" + j.id).update(Object.assign(patch, { updatedAt: new Date().toISOString() })).then(function () { toast("Research ready for " + (j.company || "this job") + ". It's on the Tracker tab."); });
+    }).catch(function (e) {
+      var code = e && e.code;
+      var msg = code === "not_granted" || code === "sampling_disabled" ? "You didn't allow Claude on this page, so the next morning run will research it instead." :
+        code === "rate_limited" ? "Claude is busy or you've hit a usage limit. Try Research again later; the morning run will also pick it up." :
+        "Research didn't finish. Try again from the Tracker tab, or the morning run will pick it up.";
+      writeJob(j.id, { researchStatus: "queued", researchNote: msg });
+    }).then(function () { delete state.researching[j.id]; render(); });
+  }
+  function researchStatusLine(j) {
+    var st = state.researching[j.id] ? "running" : j.research && j.research.summary ? "done" : j.researchStatus || "";
+    if (st === "running") return h("div", { class: "research is-running", role: "status" }, [h("b", { text: "Researching… " }), "Checking Indeed and the posting. This takes about a minute."]);
+    if (st === "done") return h("div", { class: "research" }, [h("b", { text: "Research ready. " }), j.research.summary.length > 180 ? j.research.summary.slice(0, 177) + "…" : j.research.summary, " ", h("a", { href: "#pipeline", onclick: function (e) { e.preventDefault(); setTab("pipeline"); }, text: "Full notes on the Tracker →" })]);
+    if (st === "queued") return h("div", { class: "research is-failed" }, [h("b", { text: "Research queued. " }), j.researchNote || "The next morning run will research it. ", " ", state.sample ? h("button", { type: "button", class: "btn ghost", text: "Try now", onclick: function () { researchJob(j); } }) : null]);
+    return state.sample ? h("div", { class: "research" }, [h("button", { type: "button", class: "btn ghost", text: "Research this company", onclick: function () { researchJob(j); } })]) : null;
+  }
+  function researchBlock(j) {
+    var r = j.research || {};
+    function list(title, arr) { return arr && arr.length ? h("div", {}, [h("h4", { text: title }), h("ul", {}, arr.map(function (t) { return h("li", { text: t }); }))]) : null; }
+    function para(title, t) { return t ? h("div", {}, [h("h4", { text: title }), h("p", { text: t })]) : null; }
+    return h("div", { class: "rblock" }, [
+      h("p", { text: r.summary }),
+      r.indeedStats && r.indeedStats.length ? h("div", { class: "rstats" }, r.indeedStats.map(function (t) { return h("span", { class: "chip", text: t }); })) : null,
+      para("The company", r.company), para("What employees say", r.culture), para("The role", r.role),
+      list("Why you fit", r.whyYou), list("Talking points", r.talkingPoints), list("Questions to ask", r.questionsToAsk), list("Watch-outs", r.watchOuts),
+      h("div", { class: "rmeta" }, [
+        "Sources: " + (r.sources || []).join(", ") + (r.generatedAt ? " · " + fmtDate(r.generatedAt.slice(0, 10)) : ""),
+        r.indeedUrl ? h("span", {}, [" · ", h("a", { href: r.indeedUrl, target: "_blank", rel: "noopener", text: "Indeed company page ↗" })]) : null
+      ])
+    ]);
+  }
+
+  // ---------- fill request (Claude in Chrome) ----------
+  var TRACKER_URL = "https://claude.ai/artifact/8J323njpmtgdyiRyF7U6Ds";
+  function fillRequest(j) {
+    return [
+      "Using Claude in Chrome, fill out my job application for " + (j.title || "this job") + " at " + (j.company || "this company") + ".",
+      "Application link: " + (j.url || "(see the tracker)"),
+      "Tracker: " + TRACKER_URL + " (job id " + j.id + "). Read my resume details from config/profile and this job's posting and research from jobs/" + j.id + " with ArtifactData.",
+      "Open the application in a new tab and fill every page from my resume. Write a cover letter tailored to this job using the research talking points, and never claim experience my resume doesn't show.",
+      "Stop before the final Submit button so I can review and submit it myself.",
+      "Then save the cover letter, the answers you entered, and the site where I needed an account to this job's tracker row."
+    ].join("\n");
+  }
+  function toggleFill(j) { state.fillOpen[j.id] = !state.fillOpen[j.id]; render(); }
+  function fillBox(j) {
+    var ta = h("textarea", { readonly: true, "aria-label": "Request to paste into Claude in Chrome" });
+    ta.value = fillRequest(j);
+    var copyBtn = h("button", { type: "button", class: "btn primary", text: "Copy request", onclick: function () {
+      var done = function () { copyBtn.textContent = "✓ Copied"; toast("Copied. Paste it into Claude in Chrome."); };
+      try { navigator.clipboard.writeText(ta.value).then(done, function () { ta.focus(); ta.select(); toast("Select-all is on. Press Ctrl/Cmd+C to copy."); }); }
+      catch (e) { ta.focus(); ta.select(); toast("Select-all is on. Press Ctrl/Cmd+C to copy."); }
+    } });
+    return h("div", { class: "fillbox" }, [
+      h("p", { text: "Claude fills applications in your own Chrome, where your job-site logins are. Copy this, open Claude in Chrome, and paste it. Claude stops before Submit so you can review." }),
+      ta,
+      h("div", { class: "btnrow", style: "margin-top:8px" }, [copyBtn, j.url ? h("a", { class: "btn ghost", href: j.url, target: "_blank", rel: "noopener", text: "Open application ↗" }) : null])
+    ]);
   }
   function unselectJob(j) { writeJob(j.id, { status: "new" }).then(function () { toast("Removed from the apply list."); }); }
   function dismissJob(j) {
@@ -471,7 +637,16 @@
     var det = h("details", { class: "row", "data-id": j.id }, [
       h("summary", {}, [h("div", { class: "who" }, [h("b", { text: j.company || "Unknown company" }), h("span", { text: (j.title || "") + (j.appliedAt ? " · applied " + fmtDate(j.appliedAt) : "") + (j.followUpAt && j.stage === "Applied" && !j.heardBack ? " · follow up " + fmtDate(j.followUpAt) : "") })]), h("div", { class: "flags" }, flags)]),
       h("div", { class: "edit" }, [
-        r.summary ? h("label", { class: "wide" }, ["Company research", h("div", { class: "readout", text: r.summary })]) : null,
+        h("div", { class: "wide" }, [
+          h("div", { class: "rmeta", style: "margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600" }, ["Company research"]),
+          r.summary ? researchBlock(j) : (researchStatusLine(j) || h("div", { class: "rmeta", text: "Not researched yet. The next morning run will do it." })),
+          h("div", { class: "btnrow", style: "margin-top:10px" }, [
+            r.summary && state.sample ? h("button", { type: "button", class: "btn ghost", disabled: !!state.researching[j.id], text: state.researching[j.id] ? "Researching…" : "Redo research", onclick: function () { researchJob(j); } }) : null,
+            h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Fill it out", onclick: function () { toggleFill(j); } }),
+            j.url ? h("a", { class: "btn ghost", href: j.url, target: "_blank", rel: "noopener", text: "Open application ↗" }) : null
+          ]),
+          state.fillOpen[j.id] ? h("div", { style: "margin-top:10px" }, [fillBox(j)]) : null
+        ]),
         field(j, "appliedAt", "Applied on", "date"),
         field(j, "followUpAt", "Follow up on", "date"),
         field(j, "heardBack", "Heard back?", "select", { options: [["false", "Not yet"], ["true", "Yes"]], cast: "bool" }),
@@ -644,5 +819,11 @@
     db.collection("runs").orderBy("date", "desc").limit(30).onSnapshot(function (s) { state.runs = docs(s); render(); }, onErr);
     db.doc("config/profile").onSnapshot(function (d) { state.profile = d.exists ? d.data() : null; render(); }, onErr);
   }).catch(function () { state.dbError = "Open this page from your Claude account to see your tracker."; render(); });
+  if (window.claude && window.claude.use) {
+    window.claude.use("sample").then(function (s) { state.sample = s || null; render(); }, function () {});
+    window.claude.use("mcp").then(function (m) { state.mcp = m || null; }, function () {});
+  }
 })();
 </script>
+
+</body></html>
