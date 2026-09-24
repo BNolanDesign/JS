@@ -231,6 +231,9 @@
   .rblock ul { margin: 0; padding-left: 18px; }
   .rstats { display: flex; flex-wrap: wrap; gap: 6px; }
   .rmeta { font: 12px/1.4 var(--mono); color: var(--ink-3); }
+  .chip.kw { text-transform: none; letter-spacing: 0; font: 600 12px/1.2 var(--body); background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  .wsite { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); display: grid; gap: 6px; }
+  .wsite p { margin: 0; }
   .fillbox { margin: 0 16px 16px; }
   .fillbox textarea, .edit .fillbox textarea { width: 100%; min-height: 120px; font: 13px/1.45 var(--mono); background: var(--surface-2); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; color: var(--ink); }
   .fillbox p { margin: 0 0 6px; font-size: 13px; color: var(--ink-2); }
@@ -512,7 +515,7 @@
         "You are preparing a job seeker for an application. Research the company and role below using ONLY: the job posting text, the Indeed company data (if given), and your own general knowledge of the company. You cannot browse. Anything from your general knowledge may be out of date: say so where it matters, and never invent specific recent news, people, numbers or funding.",
         "Never claim experience the candidate doesn't have. Base fit points only on the candidate profile.",
         "",
-        "Reply with ONLY a JSON object: {\"summary\": \"2-3 sentences: who they are and what this job really is\", \"company\": \"what they do, size, industry, customers\", \"culture\": \"what employees say, from the Indeed stats if given, else 'No employee data found'\", \"role\": \"what the job involves day to day, team and reporting line from the posting\", \"whyYou\": [\"3-4 specific ways the candidate's real experience matches\"], \"talkingPoints\": [\"3 things to mention in the cover letter or interview\"], \"questionsToAsk\": [\"3 smart questions for the interview\"], \"watchOuts\": [\"1-3 gaps or risks to prepare for\"]}",
+        "Reply with ONLY a JSON object: {\"summary\": \"2-3 sentences: who they are and what this job really is\", \"company\": \"what they do, size, industry, customers\", \"culture\": \"what employees say, from the Indeed stats if given, else 'No employee data found'\", \"role\": \"what the job involves day to day, team and reporting line from the posting\", \"whyYou\": [\"3-4 specific ways the candidate's real experience matches\"], \"talkingPoints\": [\"3 things to mention in the cover letter or interview\"], \"questionsToAsk\": [\"3 smart questions for the interview\"], \"watchOuts\": [\"1-3 gaps or risks to prepare for\"], \"postingKeywords\": [\"10-15 exact words or short phrases from the posting that a recruiter or applicant-tracking system will look for, most important first, copied as written\"]}",
         "",
         "JOB: " + (j.title || "") + " at " + (j.company || "") + " · " + (j.location || "") + " · " + (j.workplace || "") + " · " + (salaryText(j) || "salary not listed"),
         "POSTING:\n" + String(j.description || j.fitSummary || "").slice(0, 7000),
@@ -528,6 +531,7 @@
         summary: String(r.summary), company: r.company ? String(r.company) : "", culture: r.culture ? String(r.culture) : "", role: r.role ? String(r.role) : "",
         whyYou: (r.whyYou || []).map(String).slice(0, 5), talkingPoints: (r.talkingPoints || []).map(String).slice(0, 5),
         questionsToAsk: (r.questionsToAsk || []).map(String).slice(0, 5), watchOuts: (r.watchOuts || []).map(String).slice(0, 4),
+        postingKeywords: (r.postingKeywords || []).map(String).slice(0, 15),
         indeedUrl: indeed && indeed.url ? indeed.url : null, indeedStats: indeed ? indeed.stats : [],
         sources: ["Job posting"].concat(indeed ? ["Indeed company data"] : []).concat(["Claude's general knowledge (may be dated)"]),
         generatedAt: new Date().toISOString(), generatedBy: "tracker page"
@@ -546,7 +550,7 @@
   }
   function researchStatusLine(j) {
     var st = state.researching[j.id] ? "running" : j.research && j.research.summary ? "done" : j.researchStatus || "";
-    if (st === "running") return h("div", { class: "research is-running", role: "status" }, [h("b", { text: "Researching… " }), "Checking Indeed and the posting. This takes about a minute."]);
+    if (st === "running") return h("div", { class: "research is-running", role: "status" }, [h("b", { text: "Researching… " }), "Checking Indeed and the posting. This takes about a minute. Their website gets read on the next hourly check."]);
     if (st === "done") return h("div", { class: "research" }, [h("b", { text: "Research ready. " }), j.research.summary.length > 180 ? j.research.summary.slice(0, 177) + "…" : j.research.summary, " ", h("a", { href: "#pipeline", onclick: function (e) { e.preventDefault(); setTab("pipeline"); }, text: "Full notes on the Tracker →" })]);
     if (st === "queued") return h("div", { class: "research is-failed" }, [h("b", { text: "Research queued. " }), j.researchNote || "The next morning run will research it. ", " ", state.sample ? h("button", { type: "button", class: "btn ghost", text: "Try now", onclick: function () { researchJob(j); } }) : null]);
     return state.sample ? h("div", { class: "research" }, [h("button", { type: "button", class: "btn ghost", text: "Research this company", onclick: function () { researchJob(j); } })]) : null;
@@ -555,10 +559,25 @@
     var r = j.research || {};
     function list(title, arr) { return arr && arr.length ? h("div", {}, [h("h4", { text: title }), h("ul", {}, arr.map(function (t) { return h("li", { text: t }); }))]) : null; }
     function para(title, t) { return t ? h("div", {}, [h("h4", { text: title }), h("p", { text: t })]) : null; }
+    function chips(title, arr) { return arr && arr.length ? h("div", {}, [h("h4", { text: title }), h("div", { class: "rstats" }, arr.map(function (t) { return h("span", { class: "chip kw", text: t }); }))]) : null; }
+    function websiteBlock(job) {
+      var w = job.websiteResearch;
+      if (!w) return h("div", { class: "research is-running" }, [h("b", { text: "Website deep-dive pending. " }), "Claude reads their site (about, careers, values, news) on the next hourly research check and adds their culture and key words here."]);
+      return h("div", { class: "wsite" }, [
+        h("h4", { text: "From their website" }),
+        w.culture ? h("p", { text: w.culture }) : null,
+        w.mission ? h("p", {}, [h("b", { text: "Mission: " }), w.mission]) : null,
+        w.values && w.values.length ? h("ul", {}, w.values.map(function (t) { return h("li", { text: t }); })) : null,
+        w.keywords && w.keywords.length ? h("div", { style: "margin-top:8px" }, [h("h4", { text: "Their words, to echo in your application" }), h("div", { class: "rstats" }, w.keywords.map(function (t) { return h("span", { class: "chip kw", text: t }); }))]) : null,
+        w.pagesRead && w.pagesRead.length ? h("div", { class: "rmeta", style: "margin-top:6px" }, ["Pages read: "].concat(w.pagesRead.slice(0, 8).map(function (u, i) { return h("span", {}, [i ? " · " : "", h("a", { href: u, target: "_blank", rel: "noopener", text: String(u).replace(/^https?:\/\/(www\.)?/, "").slice(0, 48) })]); }))) : null
+      ]);
+    }
     return h("div", { class: "rblock" }, [
       h("p", { text: r.summary }),
       r.indeedStats && r.indeedStats.length ? h("div", { class: "rstats" }, r.indeedStats.map(function (t) { return h("span", { class: "chip", text: t }); })) : null,
       para("The company", r.company), para("What employees say", r.culture), para("The role", r.role),
+      chips("Words to use, from the posting", r.postingKeywords),
+      websiteBlock(j),
       list("Why you fit", r.whyYou), list("Talking points", r.talkingPoints), list("Questions to ask", r.questionsToAsk), list("Watch-outs", r.watchOuts),
       h("div", { class: "rmeta" }, [
         "Sources: " + (r.sources || []).join(", ") + (r.generatedAt ? " · " + fmtDate(r.generatedAt.slice(0, 10)) : ""),
@@ -574,7 +593,8 @@
       "Using Claude in Chrome, fill out my job application for " + (j.title || "this job") + " at " + (j.company || "this company") + ".",
       "Application link: " + (j.url || "(see the tracker)"),
       "Tracker: " + TRACKER_URL + " (job id " + j.id + "). Read my resume details from config/profile and this job's posting and research from jobs/" + j.id + " with ArtifactData.",
-      "Open the application in a new tab and fill every page from my resume. Write a cover letter tailored to this job using the research talking points, and never claim experience my resume doesn't show.",
+      "Before filling, read the job's research, postingKeywords and websiteResearch (culture, values, keywords). If websiteResearch is missing, first read the company's website yourself: about, careers, values or culture, and recent news.",
+      "Open the application in a new tab and fill every page from my resume. Write a cover letter tailored to this job that echoes their values and uses their key words and the posting's keywords naturally where my real experience supports them. Never claim experience my resume doesn't show, and don't keyword-stuff.",
       "Stop before the final Submit button so I can review and submit it myself.",
       "Then save the cover letter, the answers you entered, and the site where I needed an account to this job's tracker row."
     ].join("\n");
