@@ -278,7 +278,7 @@
   var CLOSED = ["Accepted", "Declined", "Rejected", "No response", "Withdrawn"];
   var INTERVIEW_STAGES = ["Recruiter screen", "Interviewing", "Final round", "Offer"];
 
-  var state = { db: null, sample: null, mcp: null, researching: {}, fillOpen: {}, dbReady: false, dbError: "", jobs: [], companies: [], people: [], profile: null, runs: [], tab: "report" };
+  var state = { db: null, sample: null, mcp: null, comments: null, macClaude: "unknown", researching: {}, fillOpen: {}, dbReady: false, dbError: "", jobs: [], companies: [], people: [], profile: null, runs: [], tab: "report" };
   var view = document.getElementById("view");
   var pendingRender = false;
 
@@ -399,14 +399,14 @@
     ]);
     var selected = j.status === "selected";
     var actions = h("div", { class: "actions" }, [
-      h("button", { type: "button", class: "btn primary" + (selected ? " on" : ""), disabled: example, "aria-pressed": String(selected), text: selected ? "✓ On the apply list" : "Apply to this", onclick: function () { if (!selected) selectJob(j); else unselectJob(j); } }),
+      h("button", { type: "button", class: "btn primary" + (selected ? " on" : ""), disabled: example, "aria-pressed": String(selected), text: selected ? "✓ On the apply list" : "Apply to this", onclick: function (e) { if (!selected) selectJob(j, e.currentTarget); else unselectJob(j); } }),
       !selected ? h("button", { type: "button", class: "btn ghost", disabled: example, text: "Pass", onclick: function () { dismissJob(j); } }) : null,
       selected ? h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Research & fill", onclick: function () { toggleFill(j); } }) : null,
       j.url ? h("a", { class: "btn ghost link", href: example ? null : j.url, target: "_blank", rel: "noopener", text: selected ? "Open application ↗" : "View posting ↗" }) : null
     ]);
     return h("article", { class: "card" + (selected ? " is-selected" : "") + (example ? " example" : ""), "aria-label": (j.title || "Job") + " at " + (j.company || "") }, [
       h("div", { class: "top" }, [h("div", { class: "co" }, coChips), h("div", { class: "score " + tier[0], title: "Match score out of 100" }, [h("span", { class: "v", text: String(j.matchScore != null ? j.matchScore : "–") }), h("span", { class: "t", text: tier[1] })]), h("h3", { text: j.title || "Untitled role" })]),
-      facts, fit, selected && !example ? researchStatusLine(j) : null, actions,
+      facts, fit, selected && !example ? researchStatusLine(j) : null, selected && !example ? macLine(j) : null, actions,
       selected && state.fillOpen[j.id] ? fillBox(j) : null
     ]);
   }
@@ -447,15 +447,46 @@
     }
   }
 
-  function selectJob(j) {
-    // Open the posting in a new tab right away, while the tap still counts as a user gesture.
-    if (j.url) { try { var w = window.open(j.url, "_blank"); if (w) w.opener = null; } catch (e) {} }
+  function selectJob(j, el) {
+    // Hand the job to Claude on Brennan's Mac first, while the tap still counts as a user gesture.
+    var handed = sendToMac(j, el);
+    if (!handed && j.url) { try { var w = window.open(j.url, "_blank"); if (w) w.opener = null; } catch (e) {} }
     var patch = { status: "selected", selectedAt: today() };
     if (!j.stage) { patch.stage = "Researching"; patch.stageHistory = (j.stageHistory || []).concat([{ stage: "Researching", at: today() }]); }
     writeJob(j.id, patch).then(function () {
       toast("On the apply list. Researching " + (j.company || "the company") + " now.", function () { writeJob(j.id, { status: "new" }); });
       if (!(j.research && j.research.summary)) researchJob(j);
     });
+  }
+
+  // ---------- hand-off to Claude on the Mac ----------
+  function macRequestText(j) {
+    return "Jetstream apply request. Research " + (j.company || "the company") + " and fill out the application for \"" + (j.title || "this job") + "\" (job id " + j.id + ", " + (j.url || "no link") + ") in my Chrome. Follow config/applyRunbook in this tracker. Stop before Submit.";
+  }
+  function refreshMac() {
+    if (!state.comments) { state.macClaude = "off"; return Promise.resolve(); }
+    return state.comments.canSendToClaude().then(function (v) { if (state.macClaude !== v) { state.macClaude = v; render(); } }, function () { state.macClaude = "off"; });
+  }
+  function sendToMac(j, el) {
+    if (!state.comments || state.macClaude !== "available") return false;
+    var target = (el && el.closest && el.closest("article, details")) || el || document.body;
+    state.comments.anchorFor(target).then(function (anchor) {
+      return state.comments.sendToClaude({ anchor: anchor, text: macRequestText(j) });
+    }).then(function () {
+      writeJob(j.id, { applyRequestedAt: new Date().toISOString(), applyStatus: "sent" });
+      toast("Sent to Claude on your Mac. It's researching and filling the application now.");
+    }).catch(function (e) {
+      var code = e && e.code;
+      writeJob(j.id, { applyStatus: "not_sent" });
+      toast(code === "claude_unavailable" ? "Claude on your Mac isn't listening right now. Use Research & fill instead." : code === "consent_required" || code === "forbidden" ? "Allow the page to comment for you to hand jobs to your Mac." : "Couldn't reach Claude on your Mac. Use Research & fill instead.");
+      refreshMac();
+    });
+    return true;
+  }
+  function macLine(j) {
+    if (j.applyStatus === "sent") return h("div", { class: "research" }, [h("b", { text: "Handed to Claude on your Mac" }), j.applyRequestedAt ? " · " + fmtDate(j.applyRequestedAt.slice(0, 10)) : "", ". It researches the company and fills the application in your Chrome, then stops before Submit."]);
+    if (state.macClaude === "available") return h("div", { class: "research" }, [h("button", { type: "button", class: "btn", text: "Send to Claude on my Mac", onclick: function (e) { sendToMac(j, e.currentTarget); } })]);
+    return h("div", { class: "research is-failed" }, [h("b", { text: "Claude on your Mac isn't listening. " }), "Open a Claude session on your Mac and say ", h("b", { text: "“watch Jetstream”" }), " (setup is in the Search rules tab). Or use Research & fill."]);
   }
 
   // ---------- research ----------
@@ -804,6 +835,12 @@
 
   function renderRules() {
     var p = state.profile;
+    view.appendChild(h("div", { class: "panel", style: "margin-top:26px" }, [
+      h("h2", { text: "Hands-free applying" }),
+      h("p", { text: "Status: " + ({ available: "Claude on your Mac is listening. Apply to this hands jobs straight to it.", no_session: "No Claude session is listening. Start one on your Mac.", writers_only: "Only the tracker's owner can hand off jobs.", off: "Not available in this view.", unknown: "Checking…" }[state.macClaude] || "Not available.") }),
+      h("p", { text: "One-time setup each time you start your Mac: open the Claude desktop app with Claude in Chrome connected, start a new Code session on your computer, and send this line. Leave that session open." }),
+      h("div", { class: "fillbox", style: "margin:0" }, [(function () { var t = h("textarea", { readonly: true, style: "min-height:60px" }); t.value = "Watch Jetstream: watch " + TRACKER_URL + " for comments sent to Claude, and for each apply request follow config/applyRunbook in that tracker's database."; return t; })()])
+    ]));
     view.appendChild(h("div", { class: "sechead" }, [h("h2", { text: "Search rules" }), h("span", { class: "meta", text: "Ask Claude to change any of these" })]));
     if (!p) { view.appendChild(h("div", { class: "notice", text: "The search rules haven't loaded yet." })); return; }
     var s = p.search || {}, c = p.candidate || {};
@@ -857,6 +894,8 @@
   if (window.claude && window.claude.use) {
     window.claude.use("sample").then(function (s) { state.sample = s || null; render(); }, function () {});
     window.claude.use("mcp").then(function (m) { state.mcp = m || null; }, function () {});
+    window.claude.use("comments").then(function (c) { state.comments = c || null; refreshMac(); }, function () {});
+    document.addEventListener("visibilitychange", function () { if (!document.hidden) refreshMac(); });
   }
 })();
 </script>
