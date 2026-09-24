@@ -109,13 +109,12 @@ Fields the tracker adds as Brennan works a job: `selectedAt`, `dismissedAt`, `st
 `accountSite`, `salaryAsked`, `salaryOffered`, `resumeVersion`, `coverLetter`, `contacts`, `interviews`,
 `answers`, `notes`, and `research` (`{summary, …}`, written by Claude after a job is selected).
 
-## Research (after Brennan picks a job)
+## Research and fill (after Brennan picks a job)
 
 - **On the tracker page.** *Apply to this* opens the posting and has Claude write `research` from the posting, Indeed
   company data and the resume, including `postingKeywords` (exact words from the posting to mirror). The page can't read
   other websites.
-- **Hourly research check** (weekdays, routine "Operation Jetstream research check"). For every `selected` job it fills
-  in whatever is missing: `websiteResearch` (culture, mission, values, the keywords the company repeats on its own site,
-  recent news, pages read) from up to 8 pages of the company's site, and `research` if the page couldn't do it.
-- **Fill it out.** The copied request tells Claude in Chrome to use `postingKeywords` and `websiteResearch.keywords`
-  naturally in the cover letter and answers, only where the resume backs them up.
+- **Research & fill.** The button copies one self-contained request (resume details, research, keywords). Pasted into
+  Claude in Chrome, it reads the company's website, fills the application up to Submit, and reports back the company
+  notes, cover letter and answers. There is no scheduled research job.
+- **Backup.** If the page's research failed, the morning run fills in `research` for selected jobs.

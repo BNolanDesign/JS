@@ -401,7 +401,7 @@
     var actions = h("div", { class: "actions" }, [
       h("button", { type: "button", class: "btn primary" + (selected ? " on" : ""), disabled: example, "aria-pressed": String(selected), text: selected ? "✓ On the apply list" : "Apply to this", onclick: function () { if (!selected) selectJob(j); else unselectJob(j); } }),
       !selected ? h("button", { type: "button", class: "btn ghost", disabled: example, text: "Pass", onclick: function () { dismissJob(j); } }) : null,
-      selected ? h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Fill it out", onclick: function () { toggleFill(j); } }) : null,
+      selected ? h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Research & fill", onclick: function () { toggleFill(j); } }) : null,
       j.url ? h("a", { class: "btn ghost link", href: example ? null : j.url, target: "_blank", rel: "noopener", text: selected ? "Open application ↗" : "View posting ↗" }) : null
     ]);
     return h("article", { class: "card" + (selected ? " is-selected" : "") + (example ? " example" : ""), "aria-label": (j.title || "Job") + " at " + (j.company || "") }, [
@@ -550,7 +550,7 @@
   }
   function researchStatusLine(j) {
     var st = state.researching[j.id] ? "running" : j.research && j.research.summary ? "done" : j.researchStatus || "";
-    if (st === "running") return h("div", { class: "research is-running", role: "status" }, [h("b", { text: "Researching… " }), "Checking Indeed and the posting. This takes about a minute. Their website gets read on the next hourly check."]);
+    if (st === "running") return h("div", { class: "research is-running", role: "status" }, [h("b", { text: "Researching… " }), "Checking Indeed and the posting. This takes about a minute."]);
     if (st === "done") return h("div", { class: "research" }, [h("b", { text: "Research ready. " }), j.research.summary.length > 180 ? j.research.summary.slice(0, 177) + "…" : j.research.summary, " ", h("a", { href: "#pipeline", onclick: function (e) { e.preventDefault(); setTab("pipeline"); }, text: "Full notes on the Tracker →" })]);
     if (st === "queued") return h("div", { class: "research is-failed" }, [h("b", { text: "Research queued. " }), j.researchNote || "The next morning run will research it. ", " ", state.sample ? h("button", { type: "button", class: "btn ghost", text: "Try now", onclick: function () { researchJob(j); } }) : null]);
     return state.sample ? h("div", { class: "research" }, [h("button", { type: "button", class: "btn ghost", text: "Research this company", onclick: function () { researchJob(j); } })]) : null;
@@ -562,7 +562,7 @@
     function chips(title, arr) { return arr && arr.length ? h("div", {}, [h("h4", { text: title }), h("div", { class: "rstats" }, arr.map(function (t) { return h("span", { class: "chip kw", text: t }); }))]) : null; }
     function websiteBlock(job) {
       var w = job.websiteResearch;
-      if (!w) return h("div", { class: "research is-running" }, [h("b", { text: "Website deep-dive pending. " }), "Claude reads their site (about, careers, values, news) on the next hourly research check and adds their culture and key words here."]);
+      if (!w) return null;
       return h("div", { class: "wsite" }, [
         h("h4", { text: "From their website" }),
         w.culture ? h("p", { text: w.culture }) : null,
@@ -589,15 +589,30 @@
   // ---------- fill request (Claude in Chrome) ----------
   var TRACKER_URL = "https://claude.ai/artifact/8J323njpmtgdyiRyF7U6Ds";
   function fillRequest(j) {
-    return [
-      "Using Claude in Chrome, fill out my job application for " + (j.title || "this job") + " at " + (j.company || "this company") + ".",
-      "Application link: " + (j.url || "(see the tracker)"),
-      "Tracker: " + TRACKER_URL + " (job id " + j.id + "). Read my resume details from config/profile and this job's posting and research from jobs/" + j.id + " with ArtifactData.",
-      "Before filling, read the job's research, postingKeywords and websiteResearch (culture, values, keywords). If websiteResearch is missing, first read the company's website yourself: about, careers, values or culture, and recent news.",
-      "Open the application in a new tab and fill every page from my resume. Write a cover letter tailored to this job that echoes their values and uses their key words and the posting's keywords naturally where my real experience supports them. Never claim experience my resume doesn't show, and don't keyword-stuff.",
-      "Stop before the final Submit button so I can review and submit it myself.",
-      "Then save the cover letter, the answers you entered, and the site where I needed an account to this job's tracker row."
-    ].join("\n");
+    var c = (state.profile && state.profile.candidate) || {};
+    var r = j.research || {};
+    var kw = (r.postingKeywords || []).join("; ");
+    var lines = [
+      "Research this company and fill out my job application for " + (j.title || "this job") + " at " + (j.company || "this company") + ". Work in my Chrome.",
+      "",
+      "STEP 1, RESEARCH: Find " + (j.company || "the company") + "'s official website and read up to 8 pages: home, about, mission or values, culture or careers, leadership, and recent news. Note their culture, mission, stated values, and the exact words and phrases they repeat.",
+      "",
+      "STEP 2, APPLY: Open " + (j.url || "the job posting") + " and go to the application. Fill every page using my details below. Write a cover letter for this job that echoes their values and naturally uses their words and the posting's keywords, only where my real experience backs them up. Never claim experience I don't have, and don't keyword-stuff. Upload my resume file if asked; if you can't find it, ask me. If a question needs information I haven't given you (salary expectations, work authorization, start date, references), stop and ask me.",
+      "STOP before the final Submit button so I can review and submit it myself.",
+      "",
+      "STEP 3, REPORT BACK: Give me (a) the company notes: culture, mission, values, their key words, pages you read; (b) the cover letter; (c) every answer you entered; (d) whether the site made me create an account. If you can use the ArtifactData tool, also save these to " + TRACKER_URL + " in jobs/" + j.id + " as websiteResearch {culture, mission, values[], keywords[], pagesRead[]}, coverLetter, answers and accountSite, and set stage to \"Ready to apply\".",
+      "",
+      "MY DETAILS:",
+      "Name: " + (c.name || "") + " · Email: " + (c.email || "") + " · Phone: " + (c.phone || "") + " · LinkedIn: " + (c.linkedin || "") + " · Website: " + (c.website || ""),
+      "Location: " + ((state.profile && state.profile.search && state.profile.search.homeLabel) || "Frederick, MD") + " " + ((state.profile && state.profile.search && state.profile.search.homeZip) || ""),
+      "Education: " + (c.education || ""),
+      "Experience: " + (c.history || []).map(function (x) { return x.title + ", " + x.company + ", " + x.location + " (" + x.dates + ")"; }).join("; "),
+      "Proof points: " + (c.proofPoints || []).join("; "),
+      "Skills: " + (c.skills || []).join(", ")
+    ];
+    if (r.summary) lines.push("", "WHAT I ALREADY KNOW ABOUT THIS JOB: " + r.summary + (r.talkingPoints && r.talkingPoints.length ? " Talking points: " + r.talkingPoints.join("; ") : ""));
+    if (kw) lines.push("POSTING KEYWORDS: " + kw);
+    return lines.join("\n");
   }
   function toggleFill(j) { state.fillOpen[j.id] = !state.fillOpen[j.id]; render(); }
   function fillBox(j) {
@@ -609,7 +624,7 @@
       catch (e) { ta.focus(); ta.select(); toast("Select-all is on. Press Ctrl/Cmd+C to copy."); }
     } });
     return h("div", { class: "fillbox" }, [
-      h("p", { text: "Claude fills applications in your own Chrome, where your job-site logins are. Copy this, open Claude in Chrome, and paste it. Claude stops before Submit so you can review." }),
+      h("p", { text: "Copy this and paste it into Claude in Chrome. In one go, Claude reads the company's website, then opens the application and fills it out using your resume and their words. It stops before Submit so you can review." }),
       ta,
       h("div", { class: "btnrow", style: "margin-top:8px" }, [copyBtn, j.url ? h("a", { class: "btn ghost", href: j.url, target: "_blank", rel: "noopener", text: "Open application ↗" }) : null])
     ]);
@@ -662,7 +677,7 @@
           r.summary ? researchBlock(j) : (researchStatusLine(j) || h("div", { class: "rmeta", text: "Not researched yet. The next morning run will do it." })),
           h("div", { class: "btnrow", style: "margin-top:10px" }, [
             r.summary && state.sample ? h("button", { type: "button", class: "btn ghost", disabled: !!state.researching[j.id], text: state.researching[j.id] ? "Researching…" : "Redo research", onclick: function () { researchJob(j); } }) : null,
-            h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Fill it out", onclick: function () { toggleFill(j); } }),
+            h("button", { type: "button", class: "btn", "aria-expanded": String(!!state.fillOpen[j.id]), text: "Research & fill", onclick: function () { toggleFill(j); } }),
             j.url ? h("a", { class: "btn ghost", href: j.url, target: "_blank", rel: "noopener", text: "Open application ↗" }) : null
           ]),
           state.fillOpen[j.id] ? h("div", { style: "margin-top:10px" }, [fillBox(j)]) : null
