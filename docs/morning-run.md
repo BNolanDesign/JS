@@ -16,6 +16,7 @@ Search rules and resume data: `config/profile.json` (mirrored in the database at
 | Frederick County Workforce Services | `frederickworks.com/job-openings/` |
 | Frederick County Government, City of Frederick | Their governmentjobs.com boards. |
 | Dice | Dice connector, marketing titles, 21701 radius plus remote. |
+| Web search (Google-style) | Run the WebSearch tool every morning, after the other sources, to catch jobs posted only on employer sites or smaller boards. For each target title, search (a) `"<title>" jobs Frederick MD` plus nearby towns in range (Hagerstown, Germantown, Gaithersburg, Rockville, Columbia, Westminster, Leesburg), (b) `"<title>" remote`, and (c) employer job-system searches: `"<title>" (Maryland OR remote) site:myworkdayjobs.com OR site:boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.ashbyhq.com OR site:bamboohr.com OR site:icims.com`. Open every promising result with WebFetch and keep it only when the posting is still open, was posted in the last 14 days (or has no date but is live), and passes every filter. Search results are often stale or mislabeled, so never make a card from the search snippet alone. Source name: `Web search`. |
 | Indeed, ZipRecruiter (direct search) | Their connectors, when connected: search each target title near 21701 and remote. Supplements the email alerts; the same job found both ways is one job. |
 
 Source notes from the first run (2026-09-23):
@@ -78,7 +79,7 @@ Look up the Glassdoor rating. Leave it empty when no rating card is found.
   "title": "Senior Brand Manager",
   "company": "Example Foods Co.",
   "url": "https://…",
-  "source": "LinkedIn alert | Indeed alert | Glassdoor alert | ZipRecruiter alert | Greenhouse | Lever | Ashby | USAJOBS | Frederick Works | Frederick County Gov | Dice | Manual",
+  "source": "LinkedIn alert | Indeed alert | Indeed | ZipRecruiter | Web search | Glassdoor alert | ZipRecruiter alert | Greenhouse | Lever | Ashby | USAJOBS | Frederick Works | Frederick County Gov | Dice | Manual",
   "postedAt": "2026-09-22",
   "location": "Frederick, MD",
   "workplace": "On-site | Hybrid · 3 days | Remote",
