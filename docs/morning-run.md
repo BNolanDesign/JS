@@ -15,7 +15,7 @@ Search rules and resume data: `config/profile.json` (mirrored in the database at
 | USAJOBS | `data.usajobs.gov/api/search`, location 21701, radius 40 miles, plus remote. |
 | Frederick County Workforce Services | `frederickworks.com/job-openings/` |
 | Frederick County Government, City of Frederick | Their governmentjobs.com boards. |
-| Dice | Dice connector, marketing titles, 21701 radius plus remote. |
+| Dice | Dice connector: search each target title near "Frederick, MD" (radius 40 mi) and again with `workplace_types: ["Remote"]`, `posted_date: "THREE"` (or `SEVEN` after a gap). Open promising results with `get_job_details`. Most Dice marketing jobs are staffing-firm contracts: annualize hourly pay at 2,080 hours, say so in `salaryText`, and treat the same role from several recruiters as one job. |
 | Web search (Google-style) | Run the WebSearch tool every morning, after the other sources, to catch jobs posted only on employer sites or smaller boards. For each target title, search (a) `"<title>" jobs Frederick MD` plus nearby towns in range (Hagerstown, Germantown, Gaithersburg, Rockville, Columbia, Westminster, Leesburg), (b) `"<title>" remote`, and (c) employer job-system searches: `"<title>" (Maryland OR remote) site:myworkdayjobs.com OR site:boards.greenhouse.io OR site:jobs.lever.co OR site:jobs.ashbyhq.com OR site:bamboohr.com OR site:icims.com`. Open every promising result with WebFetch and keep it only when the posting is still open, was posted in the last 14 days (or has no date but is live), and passes every filter. Search results are often stale or mislabeled, so never make a card from the search snippet alone. Source name: `Web search`. |
 | Indeed, ZipRecruiter (direct search) | Their connectors, when connected: search each target title near 21701 and remote. Supplements the email alerts; the same job found both ways is one job. |
 
@@ -36,7 +36,7 @@ Source notes from the first run (2026-09-23):
 
 Drop a job when any of these holds:
 
-1. **Already seen.** The document ID is a hash of normalized company + title + location. If `jobs/<id>` exists in
+1. **Already seen.** The document ID is the first 16 hex characters of SHA-1 of the `dedupeKey`: company, title and location, each lowercased with runs of non-alphanumerics collapsed to one space, joined with `|` (e.g. `stryker|manager edt data marketing|remote`). Store `dedupeKey` on the job. Before adding a job, also check existing jobs for the same posting URL or the same company and title, since recruiters repost one role under several listings. If `jobs/<id>` exists in
    any status (new, selected, dismissed), skip it. Dismissed jobs never come back, even when reposted under a new link.
 2. **Not a target title.** Match `search.targetTitles`, including Senior and Director variants.
 3. **Sales.** Any `salesExclusionSignals` in the description. Account Executive, Account Manager and Account
