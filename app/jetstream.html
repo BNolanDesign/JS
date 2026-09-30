@@ -705,6 +705,8 @@
       h("div", { class: "edit" }, [
         h("div", { class: "wide" }, [
           h("div", { class: "rmeta", style: "margin-bottom:6px;text-transform:uppercase;letter-spacing:.06em;font-weight:600" }, ["Company research"]),
+          macLine(j),
+          h("div", { style: "height:10px" }),
           r.summary ? researchBlock(j) : (researchStatusLine(j) || h("div", { class: "rmeta", text: "Not researched yet. The next morning run will do it." })),
           h("div", { class: "btnrow", style: "margin-top:10px" }, [
             r.summary && state.sample ? h("button", { type: "button", class: "btn ghost", disabled: !!state.researching[j.id], text: state.researching[j.id] ? "Researching…" : "Redo research", onclick: function () { researchJob(j); } }) : null,
