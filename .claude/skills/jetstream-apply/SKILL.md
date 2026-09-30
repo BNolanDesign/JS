@@ -55,3 +55,19 @@ Use Claude in Chrome (load its tools per the chrome-browser skill). Work in new 
 
 List each job: its tab, anything you need from him, and "ready for your review". Remind him to set the stage to
 Applied in the tracker after he submits (or the morning run will pick it up from the confirmation email).
+
+## Legal consents: leave them for Brennan, don't stop to ask
+
+Certifications, attestations, background-check or credit-check consents, disclosures and e-signatures are Brennan's to
+give. Never tick or sign them. But don't stop the application to ask about them either:
+
+1. Fill everything else on the page and leave the consent box, signature and its date field empty.
+2. If the site lets you continue without it, keep going.
+3. If the page is required and blocks you, stop on that page. That's the end of your run for this job.
+4. Fields that need his SSN, date of birth or anything else not in config/profile: leave them blank the same way.
+5. At the end, post ONE message (and one reply in the tracker comment thread): "Ready for your review" plus a checklist of
+   every item left for him, in page order, e.g. "Certification page: tick agreement and date · Disclosures page: background
+   check consent · Additional Disclosures: SSN". Save the same list to the job's `notes` field.
+
+Only pause mid-application for things that stop you completely: a sign-in or account creation, a CAPTCHA, or a
+question you truly can't answer from config/profile and applicationAnswers.
