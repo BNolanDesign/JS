@@ -7,6 +7,7 @@ Brennan's personal job search system: a daily report of new marketing jobs withi
 |---|---|
 | `app/jetstream.html` | The report and tracker page, published as a private Claude artifact with its own database: https://claude.ai/artifact/8J323njpmtgdyiRyF7U6Ds |
 | `config/profile.json` | Search rules and resume data the matching uses |
+| `app/big-projects.html` | Big Projects: a cutaway building with one room per Claude Code project, its status, and its terminal command. Published at https://claude.ai/artifact/Lo5ogFvsP6QpxzmsUzLiAB; statuses live in that artifact's `projects` collection |
 | `docs/morning-run.md` | The steps the daily morning run follows, and the job record format |
 
 ## How it works
