@@ -3,23 +3,20 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap">
 <style>
-/* Layout: a two-story building cut open at dusk, one room per project, a donut café in the
-   middle of the ground floor, and a narrow annex on the right. Placards hang under each room. */
+/* Layout: one isometric 3D building at dusk fills the top, rooms laid out on a single level like a
+   cutaway game map, with dark signboards floating on each room's back wall. Placards for every room
+   sit below the building, and a side panel holds each project's terminal command. */
 :root {
   color-scheme: dark;
-  --night: #12152b;
-  --dusk: #2a2650;
-  --glow: #ffd79a;
-  --facade: #3b3046;
-  --facade-hi: #4a3d57;
-  --slab: #6d6478;
-  --plate: #191b24;
-  --plate-edge: #b9975a;
+  --night: #121528;
   --ink: #f6eedf;
-  --ink-soft: #c9c0d6;
-  --ink-mute: #9890a8;
-  --panel: #1d1f2c;
-  --panel-line: #33364a;
+  --ink-soft: #c9c3d8;
+  --ink-mute: #958ea8;
+  --sign: #182035;
+  --sign-edge: #2c3754;
+  --glow: #ffd28f;
+  --panel: #1b1e2c;
+  --panel-line: #31364b;
   --st-active: #52c47d;
   --st-blocked: #f05a4b;
   --st-review: #f4b740;
@@ -27,76 +24,88 @@
   --st-parked: #8e93a8;
   --display: "Fredoka", "Baloo 2", "Trebuchet MS", system-ui, sans-serif;
   --body: "Figtree", "Segoe UI", system-ui, sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html { background: var(--night); }
-body {
-  background: linear-gradient(180deg, #10132a 0%, #231f47 38%, #5a3560 72%, #a4566a 92%, #c9705f 100%);
-  background-color: var(--night);
-  color: var(--ink);
-  font-family: var(--body);
-  font-size: 15px;
-  line-height: 1.45;
-  min-height: 100%;
-}
-.page { max-width: 1480px; margin: 0 auto; padding-inline: 20px; padding-block: 22px 0; position: relative; }
-.stars { position: absolute; inset: 0 0 auto 0; height: 260px; pointer-events: none; opacity: .8;
-  background-image: radial-gradient(1.4px 1.4px at 8% 30%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 22% 12%, #fff 50%, transparent 51%),
-  radial-gradient(1.2px 1.2px at 41% 40%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 57% 18%, #fff 50%, transparent 51%),
-  radial-gradient(1.5px 1.5px at 73% 34%, #fff 50%, transparent 51%), radial-gradient(1px 1px at 88% 10%, #fff 50%, transparent 51%),
-  radial-gradient(1px 1px at 95% 44%, #fff 50%, transparent 51%), radial-gradient(1.2px 1.2px at 32% 52%, #fff 50%, transparent 51%); }
+body { background: var(--night); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.45; }
+.page { max-width: 1560px; margin: 0 auto; padding-inline: 20px; padding-block: 20px 28px; }
 
-header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px 28px; margin-bottom: 26px; position: relative; }
-.brand h1 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4vw, 44px); letter-spacing: .5px; margin: 0; line-height: 1; color: var(--ink); text-shadow: 0 3px 0 #0006; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 12px 28px; margin-bottom: 14px; }
+.brand h1 { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 3.6vw, 42px); margin: 0; line-height: 1; letter-spacing: .4px; }
 .brand p { margin: 8px 0 0; color: var(--ink-soft); font-size: 14px; }
 .legend { display: flex; flex-wrap: wrap; gap: 8px; }
-.legend .lg { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 8px; border-radius: 999px; background: #0007; border: 1px solid #ffffff1a; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
-.legend .lg b { color: var(--ink); font-weight: 700; }
-.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: var(--st-parked); box-shadow: 0 0 0 2px #0005; }
+.lg { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px 5px 8px; border-radius: 999px; background: #ffffff0d; border: 1px solid #ffffff17; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.lg b { color: var(--ink); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; background: var(--st-parked); flex: none; }
 .dot.active { background: var(--st-active); } .dot.blocked { background: var(--st-blocked); } .dot.review { background: var(--st-review); }
 .dot.shipped { background: var(--st-shipped); } .dot.parked { background: var(--st-parked); }
 
-/* building */
-.building { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1fr); position: relative; }
-.roof { grid-column: 1 / 4; height: 34px; background: linear-gradient(#2c2436, #3b3046); border-radius: 6px 6px 0 0; position: relative; box-shadow: inset 0 4px 0 #574a66; }
-.roof::before { content: ""; position: absolute; left: 12%; bottom: 100%; width: 70px; height: 26px; background: #2c2436; border-radius: 4px 4px 0 0; box-shadow: 120px 6px 0 -4px #2c2436; }
-.roof::after { content: ""; position: absolute; right: 9%; bottom: 100%; width: 6px; height: 46px; background: #574a66; border-radius: 3px; }
-.roof.annex { grid-column: 4; margin-left: 18px; margin-top: 18px; height: 16px; border-radius: 6px 6px 0 0; }
-.roof.annex::before, .roof.annex::after { display: none; }
-.room { background: var(--facade); padding: 10px 10px 0; display: flex; flex-direction: column; min-width: 0; border-bottom: 12px solid var(--slab); box-shadow: inset 0 -2px 0 #0004; }
-.room.annex { margin-left: 18px; background: var(--facade-hi); }
-.room { border-inline: 5px solid #2c2436; } .room.annex { border-inline: 8px solid #2c2436; }
-.scene { position: relative; border-radius: 6px; overflow: hidden; box-shadow: inset 0 0 0 3px #0006, 0 2px 0 #fff1; background: #0b0d18; cursor: pointer; }
-.scene svg { display: block; width: 100%; height: auto; }
-.scene:focus-visible { outline: 3px solid var(--glow); outline-offset: 2px; }
-.room-label { font-family: var(--display); font-weight: 600; font-size: 13px; letter-spacing: .4px; color: #ffe4c4; text-align: center; padding: 8px 0 10px; }
+/* stage */
+.stage { position: relative; border-radius: 14px; overflow: hidden; container-type: inline-size;
+  background: radial-gradient(120% 90% at 50% 0%, #3b3466 0%, #251f45 45%, #15142a 100%); box-shadow: 0 0 0 1px #ffffff12, 0 20px 50px #0008; }
+.stage canvas { display: block; width: 100%; height: auto; touch-action: pan-y; cursor: grab; }
+.stage canvas.dragging { cursor: grabbing; }
+.labels { position: absolute; inset: 0; pointer-events: none; }
+.sign { position: absolute; left: 0; top: 0; pointer-events: auto; cursor: pointer; width: 15.5cqw; min-width: 0;
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .55cqw;
+  background: linear-gradient(180deg, #1f2944, var(--sign)); border: .14cqw solid var(--sign-edge); border-radius: .7cqw;
+  padding: .55cqw .7cqw; box-shadow: 0 .35cqw 0 #0b0f1c, 0 .8cqw 1.6cqw #0008; color: var(--ink); text-align: left;
+  font: inherit; will-change: transform; }
+.sign:hover { filter: brightness(1.12); }
+.sign:focus-visible { outline: 2px solid var(--glow); outline-offset: 2px; }
+.sign img { width: 2.5cqw; height: 2.5cqw; border-radius: .45cqw; display: block; }
+.sign .t { min-width: 0; }
+.sign .n { font-family: var(--display); font-weight: 600; font-size: 1.22cqw; line-height: 1.1; display: block; }
+.sign .s { font-size: .84cqw; line-height: 1.25; color: var(--ink-soft); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-top: .15cqw; }
+.sign .s b { font-weight: 700; }
+.sign .s b.active { color: var(--st-active); } .sign .s b.blocked { color: #ff7b6e; } .sign .s b.review { color: var(--st-review); }
+.sign .s b.shipped { color: var(--st-shipped); } .sign .s b.parked { color: #b5b9c9; }
+.sign .lk { width: 1.9cqw; height: 1.9cqw; border-radius: .4cqw; display: grid; place-items: center; color: var(--ink-soft); background: #ffffff10; }
+.sign .lk svg { width: 1.2cqw; height: 1.2cqw; }
+.sign.cafe { background: linear-gradient(180deg, #fff1e6, #ffe0cf); border-color: #ff8fb5; color: #3a1d2b; box-shadow: 0 .35cqw 0 #c9497c, 0 .8cqw 1.6cqw #0008; }
+.sign.cafe .s { color: #6b3a4f; }
+.hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: #ffffffa0; background: #0006; padding: 4px 9px; border-radius: 999px; pointer-events: none; }
+.fallback { padding: 40px 24px; text-align: center; color: var(--ink-soft); }
+@container (max-width: 760px) {
+  .sign { width: auto; grid-template-columns: auto auto; gap: 1cqw; padding: .9cqw 1.4cqw .9cqw 1cqw; border-radius: 1.2cqw; }
+  .sign img { width: 4.4cqw; height: 4.4cqw; border-radius: .9cqw; }
+  .sign .n { font-size: 2.6cqw; white-space: nowrap; }
+  .sign .s, .sign .lk { display: none; }
+  .sign .t::after { content: ""; display: block; height: 1.1cqw; width: 6cqw; border-radius: 1cqw; margin-top: .5cqw; background: var(--chip, #8e93a8); }
+  .hint { display: none; }
+}
+@container (max-width: 520px) {
+  .sign { padding: .8cqw; gap: 0; border-radius: 2cqw; border: .6cqw solid var(--chip, #8e93a8); }
+  .sign img { width: 6.4cqw; height: 6.4cqw; border-radius: 1.4cqw; }
+  .sign .t { display: none; }
+}
 
 /* placards */
-.placard { flex: 1; position: relative; margin: 10px 4px 12px; background: var(--plate); border: 2px solid var(--plate-edge); border-radius: 6px; padding: 10px 12px 10px; box-shadow: 0 3px 0 #0008, inset 0 1px 0 #ffffff14; min-height: 128px; display: flex; flex-direction: column; gap: 6px; }
-.placard::before, .placard::after { content: ""; position: absolute; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, #f3dca8, #8a6a33); }
-.placard::before { left: 6px; } .placard::after { right: 6px; }
-.pl-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline: 6px; }
-.pl-name { font-family: var(--display); font-weight: 600; font-size: 17px; letter-spacing: .3px; color: var(--ink); line-height: 1.15; min-width: 0; }
+.rooms-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 26px 0 12px; flex-wrap: wrap; }
+.rooms-head h2 { font-family: var(--display); font-weight: 600; font-size: 20px; margin: 0; }
+.rooms-head p { margin: 0; color: var(--ink-mute); font-size: 13px; }
+.placards { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.placard { background: #191c29; border: 1px solid #2b3044; border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pl-head { display: flex; align-items: center; gap: 10px; }
+.pl-head img { width: 32px; height: 32px; border-radius: 7px; flex: none; }
+.pl-name { font-family: var(--display); font-weight: 600; font-size: 17px; line-height: 1.15; flex: 1; min-width: 0; }
 .chip { flex: none; font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; padding: 3px 8px 2px; border-radius: 4px; color: #16131c; background: var(--st-parked); }
 .chip.active { background: var(--st-active); } .chip.blocked { background: var(--st-blocked); color: #fff; } .chip.review { background: var(--st-review); }
-.chip.shipped { background: var(--st-shipped); } .chip.parked { background: var(--st-parked); } .chip.none { background: #3a3d50; color: var(--ink-soft); }
-.pl-step { margin: 0; font-size: 13.5px; color: var(--ink-soft); line-height: 1.4; padding-inline: 6px; flex: 1; }
+.chip.shipped { background: var(--st-shipped); } .chip.none { background: #3a3d50; color: var(--ink-soft); }
+.pl-step { margin: 0; font-size: 13.5px; color: var(--ink-soft); flex: 1; }
 .pl-step b { color: var(--ink); font-weight: 600; }
 .pl-actions { display: flex; flex-wrap: wrap; gap: 6px; }
-.btn { appearance: none; font: 600 12.5px/1 var(--body); color: #1b1420; background: var(--glow); border: 0; border-radius: 6px; padding: 8px 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; box-shadow: 0 2px 0 #9a6d2e; }
+.btn { appearance: none; font: 600 12.5px/1 var(--body); color: #1b1420; background: var(--glow); border: 0; border-radius: 6px; padding: 8px 10px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .btn:hover { filter: brightness(1.06); }
-.btn.ghost { background: transparent; color: var(--ink); border: 1px solid #ffffff33; box-shadow: none; }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid #ffffff33; }
 .btn.ghost:hover { background: #ffffff12; }
 .btn:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
 .btn svg { width: 14px; height: 14px; }
-.cafe-who { display: flex; flex-wrap: wrap; gap: 6px; padding-inline: 6px; }
-.cafe-who span { font-size: 12.5px; padding: 3px 8px; border-radius: 4px; background: #ffffff10; color: var(--ink-soft); }
-
-.street { height: 46px; background: linear-gradient(#2b2733 0 10px, #1b1922 10px); border-top: 3px solid #4a4452; position: relative; margin-inline: -20px; }
-.street::after { content: ""; position: absolute; left: 0; right: 0; top: 26px; height: 3px; background: repeating-linear-gradient(90deg, #d8c27a55 0 34px, transparent 34px 70px); }
-.foot { background: #1b1922; margin-inline: -20px; padding-inline: 20px; color: var(--ink-mute); font-size: 12.5px; padding-block: 14px 26px; display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; }
+.who { display: flex; flex-wrap: wrap; gap: 6px; }
+.who span { font-size: 12.5px; padding: 3px 8px; border-radius: 4px; background: #ffffff10; color: var(--ink-soft); }
+.foot { color: var(--ink-mute); font-size: 12.5px; padding-top: 18px; }
 
 /* side panel */
 .backdrop { position: fixed; inset: 0; background: #05060cb0; z-index: 20; }
@@ -115,92 +124,18 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-cont
 .links a:hover { text-decoration: underline; }
 form.edit { display: flex; flex-direction: column; gap: 12px; border-top: 1px solid var(--panel-line); padding-top: 16px; }
 form.edit label { display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; font-weight: 600; color: var(--ink-soft); }
-form.edit input, form.edit select, form.edit textarea { font: 14px/1.4 var(--body); color: var(--ink); background: #11131c; border: 1px solid #353950; border-radius: 6px; padding: 8px 10px; width: 100%; }
+form.edit input, form.edit textarea { font: 14px/1.4 var(--body); color: var(--ink); background: #11131c; border: 1px solid #353950; border-radius: 6px; padding: 8px 10px; width: 100%; }
 form.edit textarea { min-height: 64px; resize: vertical; }
-form.edit input:focus, form.edit select:focus, form.edit textarea:focus { outline: 2px solid var(--glow); outline-offset: 0; }
+form.edit input:focus, form.edit textarea:focus { outline: 2px solid var(--glow); outline-offset: 0; }
 .states { display: flex; flex-wrap: wrap; gap: 6px; }
 .states button { font: 600 12.5px var(--body); padding: 7px 10px; border-radius: 6px; border: 1px solid #3a3e56; background: #14161f; color: var(--ink-soft); cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
 .states button[aria-pressed="true"] { border-color: var(--glow); color: var(--ink); background: #2a2433; }
 .msg { font-size: 12.5px; color: var(--ink-mute); min-height: 1em; }
-.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); transform: translateX(-50%); background: #0d0f17; color: var(--ink); border: 1px solid var(--plate-edge); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; z-index: 30; max-width: calc(100% - 32px); }
-
-/* svg motion */
-.a-type { animation: type 0.8s ease-in-out infinite; }
-.a-sway { animation: sway 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
-.a-jump { animation: jump .9s cubic-bezier(.3,.6,.4,1) infinite; }
-.a-lift { animation: lift 1.8s ease-in-out infinite; }
-.a-sip { animation: sip 3.2s ease-in-out infinite; }
-.cf { animation: fall 2.8s linear infinite; }
-.blink { animation: blink 1.1s steps(2, jump-none) infinite; }
-.pulse { animation: pulse 1.6s ease-in-out infinite; }
-.smoke { animation: smoke 2.4s ease-out infinite; transform-box: fill-box; transform-origin: center; }
-.qm { animation: bobq 1.8s ease-in-out infinite; }
-@keyframes type { 50% { transform: translateY(-1.3px); } }
-@keyframes sway { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
-@keyframes jump { 0%,100% { transform: translateY(0); } 45% { transform: translateY(-9px); } }
-@keyframes lift { 50% { transform: translateY(-3px); } }
-@keyframes sip { 0%,70%,100% { transform: translateY(0); } 80% { transform: translateY(-1.5px); } }
-@keyframes fall { 0% { transform: translateY(-30px) rotate(0); opacity: 0; } 10% { opacity: 1; } 100% { transform: translateY(170px) rotate(540deg); opacity: .8; } }
-@keyframes blink { 0% { opacity: 1; } 100% { opacity: .25; } }
-@keyframes pulse { 50% { opacity: .02; } }
-@keyframes smoke { 0% { transform: translateY(0) scale(.6); opacity: .8; } 100% { transform: translateY(-26px) scale(1.4); opacity: 0; } }
-@keyframes bobq { 50% { transform: translateY(-3px); } }
-@media (prefers-reduced-motion: reduce) { svg * { animation: none !important; } }
-
-@media (max-width: 1100px) {
-  .building { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .roof, .roof.annex { grid-column: 1 / -1; margin: 0; }
-  .roof.annex { display: none; }
-  .room, .room.annex { margin-left: 0; border-inline: 6px solid #2c2436; }
-}
-@media (max-width: 640px) {
-  .page { padding-inline: 16px; }
-  .street, .foot { margin-inline: -16px; }
-  .foot { padding-inline: 16px; }
-  .building { grid-template-columns: minmax(0, 1fr); }
-}
+.toast { position: fixed; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 22px); transform: translateX(-50%); background: #0d0f17; color: var(--ink); border: 1px solid var(--glow); border-radius: 8px; padding: 10px 14px; font-size: 13.5px; z-index: 30; max-width: calc(100% - 32px); }
+@media (max-width: 640px) { .page { padding-inline: 16px; } }
 </style>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <defs>
-    <radialGradient id="hl-head" cx=".36" cy=".3" r=".75">
-      <stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".22"/>
-    </radialGradient>
-    <linearGradient id="hl-body" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".3"/>
-    </linearGradient>
-    <linearGradient id="cone" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffe0a3" stop-opacity=".55"/><stop offset="1" stop-color="#ffe0a3" stop-opacity="0"/>
-    </linearGradient>
-    <linearGradient id="wall-shade" x1="0" y1="0" x2="1" y2="0">
-      <stop offset="0" stop-color="#000" stop-opacity=".28"/><stop offset=".25" stop-color="#000" stop-opacity="0"/><stop offset=".75" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#000" stop-opacity=".28"/>
-    </linearGradient>
-    <linearGradient id="floor-shade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#000" stop-opacity=".32"/><stop offset="1" stop-color="#fff" stop-opacity=".06"/>
-    </linearGradient>
-    <linearGradient id="sky-win" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#26285a"/><stop offset=".55" stop-color="#9b4f78"/><stop offset="1" stop-color="#f3a05c"/>
-    </linearGradient>
-    <linearGradient id="screen-glow" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#9fe3ff" stop-opacity=".5"/><stop offset="1" stop-color="#9fe3ff" stop-opacity="0"/>
-    </linearGradient>
-    <radialGradient id="red-glow" cx=".5" cy="0" r="1">
-      <stop offset="0" stop-color="#ff3b30" stop-opacity=".5"/><stop offset="1" stop-color="#ff3b30" stop-opacity="0"/>
-    </radialGradient>
-    <pattern id="checker" width="20" height="20" patternUnits="userSpaceOnUse">
-      <rect width="20" height="20" fill="#ffe9da"/><rect width="10" height="10" fill="#ff8fb5"/><rect x="10" y="10" width="10" height="10" fill="#ff8fb5"/>
-    </pattern>
-    <pattern id="tiles" width="24" height="12" patternUnits="userSpaceOnUse">
-      <rect width="24" height="12" fill="none" stroke="#000" stroke-opacity=".14"/>
-    </pattern>
-    <pattern id="planks" width="40" height="9" patternUnits="userSpaceOnUse">
-      <rect width="40" height="9" fill="none" stroke="#000" stroke-opacity=".12"/><line x1="18" y1="0" x2="18" y2="9" stroke="#000" stroke-opacity=".1"/>
-    </pattern>
-  </defs>
-</svg>
-
 <div class="page">
-  <div class="stars"></div>
   <header class="top">
     <div class="brand">
       <h1>Big Projects</h1>
@@ -209,553 +144,740 @@ form.edit input:focus, form.edit select:focus, form.edit textarea:focus { outlin
     <div class="legend" id="legend" aria-label="Project count by status"></div>
   </header>
 
-  <main class="building" id="building">
-    <div class="roof" aria-hidden="true"></div>
-    <div class="roof annex" aria-hidden="true"></div>
-  </main>
-  <div class="street" aria-hidden="true"></div>
-  <div class="foot">
-    <span id="footnote">Statuses are saved with this page. Claude can update them for you, or tap a room and change it yourself.</span>
-    <span>Parked crews wait in the Donut Café Lounge.</span>
+  <div class="stage" id="stage">
+    <canvas id="c" aria-label="Isometric building with one room per project"></canvas>
+    <div class="labels" id="labels"></div>
+    <div class="hint">Drag to turn · Tap a room</div>
+    <div class="fallback" id="fallback" hidden>The 3D building can't draw in this browser. Every room's status and terminal is listed below.</div>
   </div>
+
+  <div class="rooms-head">
+    <h2>Rooms</h2>
+    <p>Statuses are saved with this page. Ask Claude to update them, or open a room and change it yourself.</p>
+  </div>
+  <div class="placards" id="placards"></div>
+  <p class="foot">Parked crews take their break in the Donut Café. The empty room on the right is saved for the next project.</p>
 </div>
 
 <div class="backdrop" id="backdrop" hidden></div>
 <aside class="panel" id="panel" hidden aria-labelledby="panel-title" role="dialog"></aside>
 <div class="toast" id="toast" hidden role="status"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
 <script>
 (() => {
+/* ============================================================ data model */
 const STATES = ["active", "blocked", "review", "shipped", "parked"];
 const STATE_LABEL = { active: "Active", blocked: "Blocked", review: "In review", shipped: "Shipped", parked: "Parked" };
+const STATE_COLOR = { active: "#52c47d", blocked: "#f05a4b", review: "#f4b740", shipped: "#b58cf5", parked: "#8e93a8" };
+const PROJECT_IDS = ["jetstream", "pace", "secondbrain", "upwork", "bnolan", "kw"];
+/* layout: 5 columns x 2 rows of 10x10 rooms; café spans 3 columns in the front row */
+const PROJECTS = {
+  jetstream:   { label: "Jetstream",          col: 0, row: 0, cap: "#24477e", brim: "#f39a33", tile: "#e8623f", shirts: ["#e9e4da", "#4a78b8", "#f0a33a"], pants: "#2b3348", off: 0 },
+  pace:        { label: "Pace",               col: 1, row: 0, cap: "#24945d", brim: "#163626", tile: "#24945d", shirts: ["#f2efe7", "#2f6b62", "#e7c45a"], pants: "#33303f", off: 2 },
+  secondbrain: { label: "Second Brain",       col: 2, row: 0, cap: "#7b4fc2", brim: "#2a1f3d", tile: "#7b4fc2", shirts: ["#efe7f7", "#c96d9a", "#5b7bd0"], pants: "#2e2a3c", off: 4 },
+  upwork:      { label: "Upwork / Fiverr",    col: 3, row: 0, cap: "#1aa3b8", brim: "#0f3f4a", tile: "#1aa3b8", shirts: ["#e6f3f5", "#d1516f", "#3c9a6b"], pants: "#2f2b38", off: 3 },
+  bnolan:      { label: "BNolan Design Site", col: 4, row: 0, cap: "#f4a63c", brim: "#1a6e5f", tile: "#e8923a", shirts: ["#1f8a74", "#f6efe2", "#3a4744"], pants: "#26303a", off: 5 },
+  kw:          { label: "K&W Campaign",       col: 0, row: 1, cap: "#1d3f8a", brim: "#e2483d", tile: "#1d3f8a", shirts: ["#2f7a7e", "#dfe6ea", "#e2ad22"], pants: "#2b3a4a", off: 1 },
+};
 const SKINS = ["#f3c9a5", "#d9a07a", "#a9714d", "#7b4a2f", "#f6d8bd", "#c58c64"];
 const HAIRS = ["#2d2026", "#6b3e22", "#c98b3a", "#3b2a1e", "#8a2f2a", "#1d1a21"];
 
-/* crew looks, keyed by room id */
-const CREWS = {
-  jetstream:   { hat: "pilot",  shirts: ["#3e6aa8", "#2f5891", "#4a78b8"], pants: "#2b3348", off: 0 },
-  pace:        { hat: "atc",    shirts: ["#e2793d", "#d0682e", "#ea8a4f"], pants: "#33303f", off: 2 },
-  secondbrain: { hat: "grad",   shirts: ["#7a55b0", "#6a4699", "#8a66c0"], pants: "#2e2a3c", off: 4 },
-  kw:          { hat: "hard",   shirts: ["#2f7a7e", "#256a6e", "#3b8a8e"], pants: "#2b3a4a", off: 1 },
-  upwork:      { hat: "beret",  shirts: ["#d1516f", "#3c9a6b", "#5367c9"], pants: "#2f2b38", off: 3 },
-  bnolan:      { hat: "beanie", shirts: ["#1f8a74", "#f0a33a", "#196f60"], pants: "#26303a", off: 5 },
-};
-
-/* the building: which room sits where. Names come from saved data; these are fallbacks. */
-const ROOMS = [
-  { id: "jetstream", label: "Jetstream", pos: "c1" },
-  { id: "pace", label: "Pace", pos: "c2" },
-  { id: "secondbrain", label: "Second Brain", pos: "c3" },
-  { id: "bnolan", label: "BNolan Design Site", pos: "annex" },
-  { id: "kw", label: "K&W Campaign", pos: "c1" },
-  { id: "cafe", label: "Donut Café Lounge", pos: "c2" },
-  { id: "upwork", label: "Upwork / Fiverr", pos: "c3" },
-  { id: "empty", label: "", pos: "annex" },
-];
-const PROJECT_IDS = ["jetstream", "pace", "secondbrain", "kw", "upwork", "bnolan"];
-
-/* ---------- helpers ---------- */
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function shade(hex, pct) {
-  const n = parseInt(hex.slice(1), 16);
-  let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
+  const n = parseInt(hex.slice(1), 16); let r = n >> 16, g = (n >> 8) & 255, b = n & 255;
   const t = pct < 0 ? 0 : 255, p = Math.abs(pct) / 100;
   r = Math.round((t - r) * p + r); g = Math.round((t - g) * p + g); b = Math.round((t - b) * p + b);
   return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
-const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-const f1 = (n) => +n.toFixed(1);
+function rrPath(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
 
-/* ---------- people ---------- */
-function hat(kind, i) {
-  switch (kind) {
-    case "pilot": return `
-      <path d="M-14,-46 Q-13,-62 0,-62 Q13,-62 14,-46 Z" fill="#26324d"/>
-      <rect x="-14.5" y="-48" width="29" height="4" rx="2" fill="#151c2e"/>
-      <path d="M-2,-46 Q12,-48 19,-44 Q10,-42 -2,-44 Z" fill="#111827"/>
-      <rect x="-12" y="-56.5" width="24" height="3" rx="1.5" fill="#6b4a2b"/>
-      <circle cx="-5" cy="-55" r="4" fill="#9ad8ec" stroke="#6b4a2b" stroke-width="1.6"/>
-      <circle cx="5" cy="-55" r="4" fill="#9ad8ec" stroke="#6b4a2b" stroke-width="1.6"/>
-      <circle cx="-6.2" cy="-56.2" r="1.2" fill="#fff" opacity=".8"/><circle cx="3.8" cy="-56.2" r="1.2" fill="#fff" opacity=".8"/>
-      <path d="M-14,-46 Q-13,-62 0,-62 Q13,-62 14,-46 Z" fill="url(#hl-head)"/>`;
-    case "atc": return `
-      <path d="M-13.5,-47 Q-13,-61 0,-61 Q13,-61 13.5,-47 Z" fill="#f08a3e"/>
-      <path d="M2,-48 Q16,-50 22,-45 Q12,-43 2,-45 Z" fill="#c9652a"/>
-      <circle cx="0" cy="-60" r="1.6" fill="#c9652a"/>
-      <path d="M-14,-44 Q-15,-64 0,-64 Q15,-64 14,-44" fill="none" stroke="#2a2a33" stroke-width="2.4"/>
-      <rect x="-18" y="-47" width="6" height="10" rx="3" fill="#2a2a33"/><rect x="12" y="-47" width="6" height="10" rx="3" fill="#2a2a33"/>
-      <path d="M15,-39 Q14,-33 6,-33" fill="none" stroke="#2a2a33" stroke-width="1.6"/><circle cx="5.5" cy="-33" r="1.8" fill="#2a2a33"/>
-      <path d="M-13.5,-47 Q-13,-61 0,-61 Q13,-61 13.5,-47 Z" fill="url(#hl-head)"/>`;
-    case "grad": return `
-      <rect x="-10" y="-56" width="20" height="8" rx="2" fill="#1f1b29"/>
-      <polygon points="0,-64 20,-57 0,-50 -20,-57" fill="#2a2536"/>
-      <polygon points="0,-64 20,-57 0,-50 -20,-57" fill="url(#hl-head)"/>
-      <circle cx="0" cy="-57" r="1.4" fill="#e7c25a"/>
-      <path d="M0,-57 L15,-55 L15,-46" fill="none" stroke="#e7c25a" stroke-width="1.3"/>
-      <rect x="13.6" y="-47" width="2.8" height="5" rx="1" fill="#e7c25a"/>`;
-    case "hard": return `
-      <path d="M-14.5,-46 A14.5,14.5 0 0 1 14.5,-46 Z" fill="#f6c63a"/>
-      <rect x="-2" y="-61" width="4" height="15" rx="2" fill="#e2ad22"/>
-      <rect x="-17.5" y="-48.5" width="35" height="4" rx="2" fill="#e2ad22"/>
-      <path d="M-14.5,-46 A14.5,14.5 0 0 1 14.5,-46 Z" fill="url(#hl-head)"/>
-      <path d="M-7,-49 a3.4,3.4 0 0 1 0,-6.8 Z" fill="#4aa3df"/><path d="M-7,-55.8 a3.4,3.4 0 0 1 0,6.8 Z" fill="#ef6a3a"/>
-      <circle cx="-7" cy="-52.4" r="3.4" fill="none" stroke="#fff" stroke-width=".8"/>`;
-    case "beret": {
-      const c = ["#c43d5e", "#2e8a5d", "#3c4fb3", "#e0832f"][i % 4];
-      return `
-      <ellipse cx="2" cy="-54" rx="15.5" ry="6.5" transform="rotate(-12 2 -54)" fill="${c}"/>
-      <ellipse cx="2" cy="-54" rx="15.5" ry="6.5" transform="rotate(-12 2 -54)" fill="url(#hl-head)"/>
-      <rect x="1" y="-62.5" width="2" height="4" rx="1" fill="${shade(c, -25)}"/>`;
-    }
-    case "beanie": return `
-      <path d="M-14,-43 A14,15 0 0 1 14,-43 Z" fill="#1fa58a"/>
-      <rect x="-14.5" y="-47" width="29" height="6" rx="3" fill="#178571"/>
-      <path d="M-14,-43 A14,15 0 0 1 14,-43 Z" fill="url(#hl-head)"/>
-      <circle cx="0" cy="-58.5" r="4.4" fill="#f4a63c"/><circle cx="-1.2" cy="-59.8" r="1.6" fill="#fff" opacity=".5"/>`;
-  }
-  return "";
-}
-
-function person(o) {
-  const { x, y, s = 0.8, crew, pose = "stand", i = 0, flip = false, board = "", mood } = o;
-  const c = CREWS[crew];
-  const skin = SKINS[(i + c.off) % SKINS.length];
-  const hair = HAIRS[(i * 2 + c.off) % HAIRS.length];
-  const shirt = c.shirts[i % c.shirts.length];
-  const sleeve = shade(shirt, -14);
-  const anim = { sit: "a-type", hips: "a-sway", scratch: "a-sway", hold: "a-lift", cheer: "a-jump", cafe: "a-sip", point: "a-sway" }[pose] || "";
-  const A = (pts) => {
-    const last = pts.trim().split(" ").pop().split(",");
-    return `<polyline points="${pts}" fill="none" stroke="${sleeve}" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${last[0]}" cy="${last[1]}" r="3.3" fill="${skin}"/>`;
-  };
-  let arms;
-  switch (pose) {
-    case "sit": arms = A("-9,-27 -12,-19 -6,-15") + A("9,-27 12,-19 6,-15"); break;
-    case "hips": arms = A("-9,-28 -18,-22 -10,-16") + A("9,-28 18,-22 10,-16"); break;
-    case "scratch": arms = A("-9,-28 -18,-22 -10,-16") + A("9,-28 19,-40 12,-51"); break;
-    case "hold": arms = A("-9,-28 -17,-45 -14,-62") + A("9,-28 17,-45 14,-62"); break;
-    case "cheer": arms = A("-9,-28 -18,-44 -22,-59") + A("9,-28 18,-44 22,-59"); break;
-    case "point": arms = A("-9,-28 -14,-20 -10,-15") + A("9,-28 18,-38 25,-50"); break;
-    case "cafe": arms = A("-9,-27 -13,-19 -7,-15") + A("9,-27 15,-21 9,-31") +
-      `<rect x="5.5" y="-38" width="8" height="8" rx="1.6" fill="#fff8ee"/><rect x="5.5" y="-35" width="8" height="2.5" fill="#ff7a3d"/><path d="M13.5,-36 q3,1 0,4" fill="none" stroke="#fff8ee" stroke-width="1.4"/>`; break;
-    default: arms = A("-9,-28 -12,-20 -11,-14") + A("9,-28 12,-20 11,-14");
-  }
-  const seated = pose === "sit" || pose === "cafe";
-  const legs = seated ? "" : `
-    <rect x="-7.5" y="-15" width="6.5" height="14" rx="3" fill="${c.pants}"/><rect x="1" y="-15" width="6.5" height="14" rx="3" fill="${c.pants}"/>
-    <ellipse cx="-4.6" cy="-1.4" rx="4.8" ry="2.7" fill="#241f2a"/><ellipse cx="4.6" cy="-1.4" rx="4.8" ry="2.7" fill="#241f2a"/>`;
-  const body = `<rect x="-11" y="-33" width="22" height="22" rx="9" fill="${shirt}"/><rect x="-11" y="-33" width="22" height="22" rx="9" fill="url(#hl-body)"/>
-    <path d="M-4,-33 L0,-28 L4,-33" fill="none" stroke="${shade(shirt, 30)}" stroke-width="1.4"/>`;
-  const m = mood || (pose === "cheer" ? "open" : (pose === "hips" || pose === "scratch") ? "worried" : "smile");
-  const mouth = m === "open" ? `<ellipse cx="0" cy="-35" rx="2.8" ry="2.4" fill="#7a2d3a"/>`
-    : m === "worried" ? `<path d="M-2.8,-34 Q0,-36.4 2.8,-34" fill="none" stroke="#5a2a33" stroke-width="1.4" stroke-linecap="round"/>`
-    : `<path d="M-2.8,-36 Q0,-33.4 2.8,-36" fill="none" stroke="#5a2a33" stroke-width="1.4" stroke-linecap="round"/>`;
-  const brows = m === "worried" ? `<path d="M-7.5,-46.5 L-3,-45" stroke="#3b2a28" stroke-width="1.3" stroke-linecap="round"/><path d="M7.5,-46.5 L3,-45" stroke="#3b2a28" stroke-width="1.3" stroke-linecap="round"/>` : "";
-  const eyes = `<ellipse cx="-4.8" cy="-41.5" rx="1.9" ry="2.5" fill="#2b2233"/><ellipse cx="4.8" cy="-41.5" rx="1.9" ry="2.5" fill="#2b2233"/>
-    <circle cx="-4.2" cy="-42.4" r=".7" fill="#fff"/><circle cx="5.4" cy="-42.4" r=".7" fill="#fff"/>`;
-  const glasses = c.hat === "grad" ? `<circle cx="-5" cy="-41.5" r="4.2" fill="#ffffff22" stroke="#2b2233" stroke-width="1.3"/><circle cx="5" cy="-41.5" r="4.2" fill="#ffffff22" stroke="#2b2233" stroke-width="1.3"/><line x1="-.8" y1="-41.5" x2=".8" y2="-41.5" stroke="#2b2233" stroke-width="1.3"/>` : "";
-  const head = `
-    <path d="M-14.5,-41 Q-15,-56 0,-57 Q15,-56 14.5,-41 Q10,-49 0,-49 Q-10,-49 -14.5,-41 Z" fill="${hair}"/>
-    <circle cx="0" cy="-43" r="13.6" fill="${skin}"/>
-    <path d="M-13.4,-46 Q-10,-55 0,-56 Q10,-55 13.4,-46 Q8,-51 0,-51 Q-8,-51 -13.4,-46 Z" fill="${hair}"/>
-    <circle cx="0" cy="-43" r="13.6" fill="url(#hl-head)"/>
-    <ellipse cx="-8.4" cy="-37.6" rx="2.6" ry="1.5" fill="#ff7f86" opacity=".45"/><ellipse cx="8.4" cy="-37.6" rx="2.6" ry="1.5" fill="#ff7f86" opacity=".45"/>
-    ${eyes}${brows}${glasses}${mouth}`;
-  const sx = flip ? -s : s;
-  return `<g transform="translate(${f1(x)} ${f1(y)}) scale(${sx} ${s})">
-    <ellipse cx="0" cy="0" rx="13" ry="3.4" fill="#000" opacity="${seated ? 0 : .3}"/>
-    <g class="${anim}" style="animation-delay:${-(i * 0.41).toFixed(2)}s">
-      ${legs}${body}${arms}${head}${hat(c.hat, i)}${board ? `<g transform="scale(${flip ? -1 : 1} 1)">${board}</g>` : ""}
-    </g></g>`;
-}
-
-/* things the crew holds up when presenting (drawn in the presenter's own space) */
-const BOARDS = {
-  jetstream: `<rect x="-19" y="-92" width="38" height="30" rx="2.5" fill="#fffaf0" stroke="#c9b99a"/>
-    <rect x="-14" y="-87" width="16" height="3" rx="1" fill="#3e6aa8"/><rect x="-14" y="-81" width="26" height="2" fill="#c9c2b4"/><rect x="-14" y="-77" width="22" height="2" fill="#c9c2b4"/><rect x="-14" y="-73" width="25" height="2" fill="#c9c2b4"/>
-    <circle cx="11" cy="-69" r="5" fill="#52c47d"/><path d="M8.6,-69 l1.8,1.8 l3.2,-3.4" fill="none" stroke="#fff" stroke-width="1.4"/>`,
-  pace: `<rect x="-22" y="-93" width="44" height="31" rx="3" fill="#1d2233" stroke="#0e111b" stroke-width="2"/>
-    <rect x="-17" y="-87" width="18" height="4" rx="2" fill="#f08a3e"/><rect x="-9" y="-80" width="22" height="4" rx="2" fill="#52c47d"/><rect x="-13" y="-73" width="26" height="4" rx="2" fill="#7aa7ff"/>
-    <line x1="4" y1="-90" x2="4" y2="-65" stroke="#fff" stroke-opacity=".4" stroke-dasharray="2 2"/>`,
-  secondbrain: `<rect x="-21" y="-93" width="42" height="31" rx="3" fill="#181a2c" stroke="#0e101b" stroke-width="2"/>
-    <g stroke="#7fe7ff" stroke-width="1" opacity=".8"><line x1="-12" y1="-84" x2="0" y2="-76"/><line x1="0" y1="-76" x2="12" y2="-85"/><line x1="0" y1="-76" x2="-6" y2="-68"/><line x1="0" y1="-76" x2="11" y2="-68"/></g>
-    <g fill="#bff4ff"><circle cx="-12" cy="-84" r="2.4"/><circle cx="0" cy="-76" r="3.2"/><circle cx="12" cy="-85" r="2.2"/><circle cx="-6" cy="-68" r="2"/><circle cx="11" cy="-68" r="2.2"/></g>`,
-  kw: `<rect x="-20" y="-93" width="40" height="31" rx="2.5" fill="#fffaf0" stroke="#c9b99a"/>
-    <rect x="-14" y="-86" width="5" height="20" fill="#ef6a3a"/><rect x="-6" y="-80" width="5" height="14" fill="#ef6a3a" opacity=".8"/><rect x="2" y="-74" width="5" height="8" fill="#4aa3df"/><rect x="10" y="-71" width="5" height="5" fill="#4aa3df"/>
-    <line x1="-16" y1="-65.5" x2="17" y2="-65.5" stroke="#8a8172"/>`,
-  upwork: `<rect x="-21" y="-93" width="42" height="31" rx="2.5" fill="#fffaf0" stroke="#c9b99a"/>
-    <rect x="-17" y="-89" width="16" height="11" rx="1.5" fill="#d1516f"/><rect x="1" y="-89" width="16" height="11" rx="1.5" fill="#5367c9"/><rect x="-17" y="-76" width="16" height="11" rx="1.5" fill="#3c9a6b"/><rect x="1" y="-76" width="16" height="11" rx="1.5" fill="#f4b740"/>`,
-  bnolan: `<rect x="-21" y="-93" width="42" height="31" rx="2.5" fill="#fbf4e8" stroke="#c9b99a"/>
-    <circle cx="-9" cy="-77" r="7" fill="#1fa58a"/><rect x="3" y="-84" width="14" height="14" rx="4" fill="#f4a63c"/><path d="M-1,-77 h2" stroke="#8a8172" stroke-width="1.4"/>`,
-};
-
-/* the one thing a blocked crew stands around */
-function problem(id, x, y) {
+/* ============================================================ project logos */
+function drawIcon(c, id, s, fg, accent) {
+  c.save(); c.scale(s / 100, s / 100); c.fillStyle = fg; c.strokeStyle = fg; c.lineCap = "round"; c.lineJoin = "round";
   switch (id) {
-    case "jetstream": return `<g transform="translate(${x} ${y})">
-      <rect x="-20" y="-30" width="40" height="28" rx="4" fill="#3a4a66"/><rect x="-20" y="-30" width="40" height="28" rx="4" fill="url(#hl-body)"/>
-      <rect x="-15" y="-26" width="30" height="13" rx="2" fill="#ff4d4d" class="blink"/>
-      <circle cx="-10" cy="-7" r="2" fill="#f4b740"/><circle cx="-3" cy="-7" r="2" fill="#52c47d"/><rect x="4" y="-9" width="11" height="4" rx="1" fill="#1d2233"/></g>`;
-    case "pace": return `<g transform="translate(${x} ${y})">
-      <rect x="-14" y="-40" width="28" height="38" rx="3" fill="#2a2d3d"/><rect x="-14" y="-40" width="28" height="38" rx="3" fill="url(#hl-body)"/>
-      <rect x="-10" y="-35" width="20" height="4" fill="#11131c"/><rect x="-10" y="-27" width="20" height="4" fill="#11131c"/><rect x="-10" y="-19" width="20" height="4" fill="#11131c"/>
-      <circle cx="7" cy="-33" r="1.3" fill="#ff4d4d" class="blink"/><path d="M-14,-12 C-30,-20 -20,4 -6,-4 S8,6 18,-4" fill="none" stroke="#f4b740" stroke-width="2"/></g>`;
-    case "secondbrain": return `<g transform="translate(${x} ${y})">
-      <rect x="-20" y="-8" width="34" height="7" rx="1" fill="#8a3b3b"/><rect x="-16" y="-15" width="30" height="7" rx="1" fill="#3b6a8a" transform="rotate(-6)"/>
-      <rect x="2" y="-22" width="22" height="6" rx="1" fill="#c99a3b" transform="rotate(24 2 -22)"/><rect x="-26" y="-6" width="10" height="5" rx="1" fill="#5a8a3b" transform="rotate(-30 -26 -6)"/>
-      <rect x="-6" y="-28" width="14" height="10" rx="1" fill="#fffaf0" transform="rotate(-18)"/></g>`;
-    case "kw": return `<g transform="translate(${x} ${y})">
-      <rect x="-17" y="-44" width="34" height="42" rx="3" fill="#c7ccd2"/><rect x="-17" y="-44" width="34" height="42" rx="3" fill="url(#hl-body)"/>
-      <rect x="-12" y="-39" width="24" height="12" rx="1.5" fill="#8b9198"/><g stroke="#6b7178" stroke-width="1.2"><line x1="-10" y1="-36" x2="10" y2="-36"/><line x1="-10" y1="-33" x2="10" y2="-33"/><line x1="-10" y1="-30" x2="10" y2="-30"/></g>
-      <rect x="-6" y="-22" width="12" height="9" rx="1.5" fill="#2a2124"/><path d="M-2,-14 q2,-6 4,0 z" fill="#f05a4b" class="blink"/>
-      <circle cx="-4" cy="-50" r="5" fill="#8d8f97" class="smoke"/><circle cx="4" cy="-56" r="6" fill="#a2a4ab" class="smoke" style="animation-delay:-.8s"/><circle cx="-1" cy="-62" r="4" fill="#b8bac0" class="smoke" style="animation-delay:-1.6s"/></g>`;
-    case "upwork": return `<g transform="translate(${x} ${y})">
-      <rect x="-18" y="-14" width="36" height="5" rx="2" fill="#b98a5a"/><rect x="-14" y="-9" width="3" height="9" fill="#8a6640"/><rect x="11" y="-9" width="3" height="9" fill="#8a6640"/>
-      <rect x="-11" y="-30" width="22" height="16" rx="2" fill="#2a2d3d"/><circle cx="0" cy="-22" r="4.5" fill="none" stroke="#f4b740" stroke-width="1.6" stroke-dasharray="20 8"/></g>`;
-    case "bnolan": return `<g transform="translate(${x} ${y})">
-      <line x1="-12" y1="0" x2="-4" y2="-46" stroke="#8a6640" stroke-width="3"/><line x1="12" y1="0" x2="4" y2="-46" stroke="#8a6640" stroke-width="3"/>
-      <rect x="-17" y="-44" width="34" height="28" rx="1" fill="#fbf4e8"/><path d="M-12,-40 L-2,-30 L-8,-26 L6,-18" fill="none" stroke="#3a2f3f" stroke-width="1.4"/>
-      <circle cx="8" cy="-34" r="5" fill="#1fa58a" opacity=".6"/><rect x="-17" y="-18" width="34" height="3" fill="#8a6640"/></g>`;
+    case "jetstream":
+      c.beginPath(); c.moveTo(50, 8); c.bezierCurveTo(68, 22, 70, 48, 63, 70); c.lineTo(37, 70); c.bezierCurveTo(30, 48, 32, 22, 50, 8); c.fill();
+      c.beginPath(); c.moveTo(37, 50); c.lineTo(22, 74); c.lineTo(38, 69); c.fill();
+      c.beginPath(); c.moveTo(63, 50); c.lineTo(78, 74); c.lineTo(62, 69); c.fill();
+      c.fillStyle = accent; c.beginPath(); c.arc(50, 38, 8, 0, 7); c.fill();
+      c.beginPath(); c.moveTo(42, 73); c.quadraticCurveTo(50, 98, 58, 73); c.fill(); break;
+    case "pace":
+      rrPath(c, 14, 56, 18, 30, 5); c.fill(); rrPath(c, 41, 38, 18, 48, 5); c.fill(); rrPath(c, 68, 16, 18, 70, 5); c.fill(); break;
+    case "secondbrain":
+      c.beginPath(); c.moveTo(48, 26); c.quadraticCurveTo(30, 16, 10, 20); c.lineTo(10, 78); c.quadraticCurveTo(30, 74, 48, 84); c.closePath(); c.fill();
+      c.beginPath(); c.moveTo(52, 26); c.quadraticCurveTo(70, 16, 90, 20); c.lineTo(90, 78); c.quadraticCurveTo(70, 74, 52, 84); c.closePath(); c.fill(); break;
+    case "kw":
+      c.lineWidth = 7; c.save(); c.translate(30, 52);
+      for (let k = 0; k < 3; k++) { c.rotate(Math.PI / 3); c.beginPath(); c.moveTo(0, -22); c.lineTo(0, 22); c.stroke(); }
+      c.restore(); c.fillStyle = accent;
+      c.beginPath(); c.moveTo(70, 14); c.bezierCurveTo(90, 36, 92, 60, 84, 74); c.bezierCurveTo(77, 86, 60, 88, 55, 75); c.bezierCurveTo(50, 63, 58, 52, 62, 44);
+      c.bezierCurveTo(64, 56, 70, 58, 73, 52); c.bezierCurveTo(76, 40, 72, 28, 70, 14); c.fill(); break;
+    case "upwork":
+      c.beginPath(); c.arc(50, 30, 13, 0, 7); c.fill(); c.beginPath(); c.arc(22, 40, 10, 0, 7); c.fill(); c.beginPath(); c.arc(78, 40, 10, 0, 7); c.fill();
+      c.beginPath(); c.ellipse(50, 76, 24, 20, 0, Math.PI, 0); c.fill();
+      c.beginPath(); c.ellipse(22, 78, 16, 15, 0, Math.PI, 0); c.fill(); c.beginPath(); c.ellipse(78, 78, 16, 15, 0, Math.PI, 0); c.fill(); break;
+    case "bnolan":
+      c.beginPath(); c.moveTo(50, 8); c.lineTo(78, 46); c.lineTo(60, 90); c.lineTo(40, 90); c.lineTo(22, 46); c.closePath(); c.fill();
+      c.fillStyle = accent; c.beginPath(); c.arc(50, 50, 8, 0, 7); c.fill(); c.fillRect(48, 14, 4, 34); break;
   }
-  return "";
+  c.restore();
 }
+function tileIcon(bg, draw) {
+  const cv = document.createElement("canvas"); cv.width = cv.height = 96; const c = cv.getContext("2d");
+  c.fillStyle = bg; rrPath(c, 0, 0, 96, 96, 20); c.fill(); draw(c); return cv.toDataURL();
+}
+const ICON_URL = {};
+for (const id of PROJECT_IDS) ICON_URL[id] = tileIcon(PROJECTS[id].tile, (c) => { c.translate(18, 18); drawIcon(c, id, 60, "#ffffff", id === "kw" ? "#ff8a3a" : shade(PROJECTS[id].tile, -35)); });
+ICON_URL.cafe = tileIcon("#ff6fa3", (c) => { c.fillStyle = "#f4b37a"; c.beginPath(); c.arc(48, 48, 30, 0, 7); c.fill(); c.fillStyle = "#fff3e8"; c.beginPath(); c.arc(48, 46, 26, 0, 7); c.fill(); c.fillStyle = "#ff6fa3"; c.beginPath(); c.arc(48, 48, 10, 0, 7); c.fill(); });
 
-/* ---------- room shell + furniture ---------- */
-function shell(p) {
-  return `
-    <polygon points="0,0 320,0 292,12 28,12" fill="${p.ceil}"/>
-    <rect x="28" y="12" width="264" height="148" fill="${p.wall}"/>
-    ${p.wallExtra || ""}
-    <rect x="28" y="12" width="264" height="148" fill="url(#wall-shade)"/>
-    <polygon points="0,0 28,12 28,160 0,220" fill="${p.side}"/>
-    <polygon points="320,0 292,12 292,160 320,220" fill="${p.side}"/>
-    <polygon points="28,160 292,160 320,220 0,220" fill="${p.floor}"/>
-    ${p.floorPat ? `<polygon points="28,160 292,160 320,220 0,220" fill="url(#${p.floorPat})"/>` : ""}
-    <polygon points="28,160 292,160 320,220 0,220" fill="url(#floor-shade)"/>
-    <line x1="28" y1="160" x2="292" y2="160" stroke="#000" stroke-opacity=".3"/>
-    <polygon points="6,88 22,94 22,158 6,182" fill="${shade(p.side, -30)}"/>
-    <circle cx="19" cy="130" r="1.6" fill="#d9b56a"/>`;
-}
-function lamps(xs, lit, color = "#2b2733") {
-  return xs.map((x) => `
-    <line x1="${x}" y1="12" x2="${x}" y2="22" stroke="#1b1820" stroke-width="1.5"/>
-    ${lit ? `<polygon points="${x - 8},28 ${x + 8},28 ${x + 52},160 ${x - 52},160" fill="url(#cone)" opacity=".5"/>` : ""}
-    <path d="M${x - 10},29 Q${x},18 ${x + 10},29 Z" fill="${color}"/>
-    <ellipse cx="${x}" cy="29" rx="6" ry="2" fill="${lit ? "#ffe7b0" : "#4b4652"}"/>`).join("");
-}
-function desk(d, on) {
-  const { x, y } = d, w = d.w || 46;
-  return `<g>
-    <polygon points="${x - w / 2 + 3},${y - 17} ${x + w / 2 - 3},${y - 17} ${x + w / 2},${y - 13} ${x - w / 2},${y - 13}" fill="${d.top || "#caa47a"}"/>
-    <rect x="${x - w / 2}" y="${y - 13}" width="${w}" height="16" rx="2" fill="${d.front || "#9c7652"}"/>
-    <rect x="${x - w / 2}" y="${y - 13}" width="${w}" height="16" rx="2" fill="url(#hl-body)" opacity=".6"/>
-    <rect x="${x - 10}" y="${y - 28}" width="20" height="12" rx="2" fill="#3a3f52"/>
-    <circle cx="${x}" cy="${y - 22}" r="1.6" fill="${on ? "#bfe9ff" : "#5c6278"}"/>
-    ${on ? `<rect x="${x - 10}" y="${y - 40}" width="20" height="13" fill="url(#screen-glow)" opacity=".7"/>` : ""}
-  </g>`;
-}
-function chair(d) {
-  const { x, y } = d;
-  return `<g><rect x="${x - 9}" y="${y - 36}" width="18" height="20" rx="5" fill="#3a3550"/><rect x="${x - 9}" y="${y - 36}" width="18" height="20" rx="5" fill="url(#hl-body)"/></g>`;
-}
-
-/* ---------- rooms ---------- */
-const SCENES = {
-  jetstream: {
-    pal: { wall: "#2c3b58", side: "#223049", ceil: "#1a2438", floor: "#46526a", floorPat: "tiles" },
-    lamps: [110, 210],
-    desks: [{ x: 84, y: 186 }, { x: 160, y: 186 }, { x: 236, y: 186 }].map((d) => ({ ...d, top: "#9aa6bb", front: "#56627c" })),
-    back(st) {
-      const lights = Array.from({ length: 24 }, (_, k) => {
-        const col = st === "blocked" && k % 5 === 2 ? "#ff4d4d" : st === "parked" ? "#3c4458" : ["#52c47d", "#52c47d", "#f4b740", "#52c47d"][k % 4];
-        return `<circle cx="${50 + (k % 8) * 15}" cy="${34 + Math.floor(k / 8) * 13}" r="4" fill="${col}" ${st === "blocked" && k % 5 === 2 ? 'class="blink"' : ""}/>`;
-      }).join("");
-      return `
-        <rect x="38" y="22" width="132" height="50" rx="4" fill="#0f1626" stroke="#0a0f1a" stroke-width="3"/>${lights}
-        <rect x="58" y="80" width="92" height="26" rx="3" fill="#0f1626" stroke="#0a0f1a" stroke-width="3"/>
-        <text x="104" y="99" text-anchor="middle" font-family="JetBrains Mono, monospace" font-size="15" fill="${st === "parked" ? "#4a4a3a" : st === "blocked" ? "#ff6a5a" : "#ffc861"}">${st === "blocked" ? "T-00:00" : st === "shipped" ? "T+00:01" : "T-00:42"}</text>
-        <rect x="186" y="22" width="92" height="96" rx="3" fill="#121826"/>
-        <rect x="190" y="26" width="84" height="88" fill="url(#sky-win)"/>
-        <rect x="190" y="98" width="84" height="16" fill="#3a2b3f"/>
-        <g stroke="#6b5a74" stroke-width="2"><line x1="248" y1="36" x2="248" y2="98"/><line x1="248" y1="50" x2="256" y2="50"/><line x1="248" y1="70" x2="256" y2="70"/></g>
-        <g transform="translate(262 ${st === "shipped" ? 56 : 68})">
-          <path d="M0,-30 Q6,-20 6,0 L-6,0 Q-6,-20 0,-30 Z" fill="#f2f0ec"/><circle cx="0" cy="-14" r="2.6" fill="#7fc4e6"/>
-          <path d="M-6,-6 L-11,4 L-6,2 Z M6,-6 L11,4 L6,2 Z" fill="#e2483d"/>
-          ${st === "shipped" ? `<path d="M-4,2 Q0,22 4,2 Z" fill="#ffb347" class="blink"/>` : ""}
-        </g>
-        <g stroke="#0e1320" stroke-width="3"><line x1="232" y1="26" x2="232" y2="114"/><line x1="190" y1="70" x2="274" y2="70"/></g>
-        <rect x="186" y="122" width="92" height="30" rx="3" fill="#1b2438"/><rect x="194" y="128" width="30" height="18" rx="2" fill="#2f6f9a" opacity=".7"/><rect x="230" y="128" width="40" height="18" rx="2" fill="#2f6f9a" opacity=".5"/>`;
-    },
-  },
-  pace: {
-    pal: { wall: "#3a3352", side: "#2d2742", ceil: "#221d33", floor: "#5a5372", floorPat: "tiles" },
-    lamps: [160],
-    desks: [{ x: 84, y: 186 }, { x: 160, y: 186 }, { x: 236, y: 186 }].map((d) => ({ ...d, top: "#d5c6b8", front: "#8f7f78" })),
-    back(st, ctx) {
-      const others = ["jetstream", "secondbrain", "kw", "upwork", "bnolan", "cafe"];
-      const mon = others.map((id, k) => {
-        const mx = 38 + (k % 3) * 40, my = 22 + Math.floor(k / 3) * 32;
-        let fill = "#1a1e2e", inner = "";
-        if (st !== "parked") {
-          if (id === "cafe") { fill = "#ff8a4a"; inner = `<circle cx="${mx + 17}" cy="${my + 12}" r="6" fill="#ff8fb5"/><circle cx="${mx + 17}" cy="${my + 12}" r="2.2" fill="#ff8a4a"/>`; }
-          else {
-            const p = ctx.projects[id];
-            const stc = p ? `var(--st-${p.state})` : "#2b3045";
-            fill = "#151a2a";
-            inner = `<rect x="${mx + 3}" y="${my + 3}" width="28" height="18" rx="1" fill="${stc}" opacity=".85"/><circle cx="${mx + 17}" cy="${my + 13}" r="4" fill="${CREWS[id].shirts[0]}" stroke="#fff" stroke-opacity=".7"/>`;
-          }
-        }
-        return `<rect x="${mx}" y="${my}" width="34" height="24" rx="2" fill="${fill}" stroke="#0e101a" stroke-width="2.5"/>${inner}`;
-      }).join("");
-      const sticky = ["#f4b740", "#7fc4e6", "#ff8fb5", "#9de08f"];
-      const notes = Array.from({ length: 9 }, (_, k) => `<rect x="${172 + (k % 3) * 36}" y="${32 + Math.floor(k / 3) * 15}" width="${18 + (k % 2) * 6}" height="10" rx="1" fill="${sticky[k % 4]}"/>`).join("");
-      const bars = [[44, 60, "#f08a3e"], [70, 90, "#52c47d"], [120, 70, "#7aa7ff"], [150, 100, "#f4b740"], [96, 40, "#b58cf5"]].map(([bx, bw, bc], k) => `<rect x="${bx}" y="${110 + (k % 3) * 9}" width="${bw}" height="6" rx="3" fill="${bc}"/>`).join("");
-      return `${mon}
-        <rect x="164" y="22" width="120" height="74" rx="3" fill="#f2efe9" stroke="#b9b2a6" stroke-width="2"/>
-        <g stroke="#d4cec4"><line x1="204" y1="26" x2="204" y2="92"/><line x1="244" y1="26" x2="244" y2="92"/></g>${notes}
-        <rect x="38" y="102" width="246" height="38" rx="3" fill="#25213a" stroke="#141223" stroke-width="2"/>
-        <g stroke="#ffffff" stroke-opacity=".1">${Array.from({ length: 12 }, (_, k) => `<line x1="${48 + k * 20}" y1="104" x2="${48 + k * 20}" y2="138"/>`).join("")}</g>${bars}`;
-    },
-  },
-  secondbrain: {
-    pal: { wall: "#4a3326", side: "#3a281d", ceil: "#2c1f17", floor: "#6b4a35", floorPat: "planks" },
-    lamps: [160],
-    desks: [{ x: 96, y: 188 }, { x: 160, y: 188 }, { x: 224, y: 188 }].map((d) => ({ ...d, top: "#a8774a", front: "#6e4a2e" })),
-    back(st) {
-      const shelf = (x0) => {
-        let s = `<rect x="${x0}" y="14" width="66" height="146" fill="#5a3b26"/>`;
-        const cols = ["#8a3b3b", "#3b6a8a", "#c99a3b", "#5a8a3b", "#7a55b0", "#d9cbb0", "#2f5a5a"];
-        for (let r = 0; r < 5; r++) {
-          const yy = 20 + r * 28;
-          s += `<rect x="${x0}" y="${yy + 22}" width="66" height="4" fill="#3d2717"/>`;
-          let bx = x0 + 3, k = r * 3;
-          while (bx < x0 + 60) { const w = 5 + ((k * 7) % 4); const h = 15 + ((k * 5) % 7); s += `<rect x="${bx}" y="${yy + 22 - h}" width="${w}" height="${h}" rx=".6" fill="${cols[k % cols.length]}"/>`; bx += w + 1; k++; }
-        }
-        return s;
-      };
-      const glow = st === "parked" ? "#2c5864" : "#7fe7ff";
-      return `${shelf(30)}${shelf(224)}
-        <rect x="104" y="22" width="112" height="60" rx="2" fill="#b98a5a" stroke="#6e4a2e" stroke-width="3"/>
-        ${[[112, 30], [150, 28], [188, 34], [124, 56], [170, 58], [200, 62]].map(([cx, cy], k) => `<rect x="${cx}" y="${cy}" width="20" height="13" fill="#fffaf0" transform="rotate(${(k % 3) - 1} ${cx} ${cy})"/><circle cx="${cx + 10}" cy="${cy + 1}" r="1.5" fill="#e2483d"/>`).join("")}
-        <polyline points="122,31 160,29 198,35 180,59 134,57 122,31" fill="none" stroke="#e2483d" stroke-width="1"/><line x1="160" y1="29" x2="210" y2="63" stroke="#e2483d" stroke-width="1"/>
-        <rect x="112" y="90" width="96" height="52" rx="4" fill="#141626" stroke="#0b0c16" stroke-width="3"/>
-        <g stroke="${glow}" stroke-width="1" opacity=".7"><line x1="130" y1="104" x2="158" y2="116"/><line x1="158" y1="116" x2="188" y2="102"/><line x1="158" y1="116" x2="146" y2="132"/><line x1="158" y1="116" x2="186" y2="130"/><line x1="188" y1="102" x2="186" y2="130"/></g>
-        <g fill="${glow}"><circle cx="130" cy="104" r="3"/><circle cx="158" cy="116" r="4.5"/><circle cx="188" cy="102" r="3"/><circle cx="146" cy="132" r="2.6"/><circle cx="186" cy="130" r="3"/></g>
-        <rect x="104" y="144" width="22" height="16" fill="#7b6a58"/><line x1="108" y1="150" x2="122" y2="150" stroke="#4a3d30"/>`;
-    },
-  },
-  kw: {
-    pal: { wall: "#4b5357", side: "#3a4145", ceil: "#2b3134", floor: "#6a6e70", floorPat: "tiles" },
-    lamps: [100, 220],
-    desks: [{ x: 84, y: 186 }, { x: 160, y: 186 }, { x: 236, y: 186 }].map((d) => ({ ...d, top: "#7f868c", front: "#4f565c" })),
-    back(st) {
-      return `
-        <rect x="28" y="18" width="264" height="14" rx="7" fill="#b9bfc6"/><rect x="28" y="18" width="264" height="14" rx="7" fill="url(#hl-body)"/>
-        ${[70, 130, 190, 250].map((x) => `<line x1="${x}" y1="18" x2="${x}" y2="32" stroke="#8b9198"/>`).join("")}
-        <rect x="268" y="28" width="14" height="30" rx="4" fill="#aab0b7"/>
-        <rect x="38" y="44" width="92" height="66" rx="2" fill="#b98a5a"/>
-        <g fill="#7a5a3a">${Array.from({ length: 40 }, (_, k) => `<circle cx="${44 + (k % 10) * 9}" cy="${50 + Math.floor(k / 10) * 15}" r=".9"/>`).join("")}</g>
-        <path d="M50,56 l14,0 l3,-3 l3,3 l-3,3 l-3,-3" fill="none" stroke="#3a3f45" stroke-width="3"/>
-        <rect x="80" y="52" width="4" height="22" fill="#e2483d"/><rect x="76" y="50" width="12" height="5" rx="1" fill="#3a3f45"/>
-        <rect x="98" y="52" width="3" height="24" fill="#3a3f45"/><rect x="94" y="74" width="11" height="4" rx="2" fill="#f4b740"/>
-        <circle cx="116" cy="62" r="7" fill="none" stroke="#3a3f45" stroke-width="2.5"/><rect x="48" y="84" width="30" height="5" rx="2" fill="#3a3f45"/><rect x="90" y="88" width="30" height="14" rx="2" fill="#e2ad22"/>
-        <rect x="186" y="44" width="98" height="70" rx="2" fill="#c49a6c" stroke="#7a5a3a" stroke-width="3"/>
-        <rect x="194" y="52" width="38" height="26" fill="#fffaf0"/><rect x="198" y="56" width="5" height="18" fill="#ef6a3a"/><rect x="206" y="62" width="5" height="12" fill="#ef6a3a"/><rect x="214" y="68" width="5" height="6" fill="#4aa3df"/><rect x="222" y="70" width="5" height="4" fill="#4aa3df"/>
-        <rect x="238" y="50" width="40" height="12" fill="#ffd9c9"/><rect x="238" y="66" width="40" height="12" fill="#cfe8ff"/>
-        <rect x="194" y="84" width="84" height="24" fill="#fffaf0"/>
-        <g stroke="#c9c2b4">${[0, 1, 2, 3].map((k) => `<line x1="194" y1="${90 + k * 5}" x2="278" y2="${90 + k * 5}"/>`).join("")}<line x1="222" y1="84" x2="222" y2="108"/><line x1="250" y1="84" x2="250" y2="108"/></g>
-        ${[[200, 51], [258, 49], [258, 65], [236, 83]].map(([px, py]) => `<circle cx="${px}" cy="${py}" r="1.8" fill="#e2483d"/>`).join("")}
-        <rect x="132" y="128" width="56" height="6" fill="#7f868c"/><rect x="136" y="134" width="4" height="26" fill="#4f565c"/><rect x="180" y="134" width="4" height="26" fill="#4f565c"/>
-        ${st === "blocked" ? "" : `<rect x="146" y="100" width="28" height="28" rx="2" fill="#c7ccd2"/><rect x="150" y="104" width="20" height="9" fill="#8b9198"/><rect x="155" y="117" width="10" height="7" fill="#2a2124"/>`}`;
-    },
-  },
-  upwork: {
-    pal: { wall: "#36474c", side: "#2a383c", ceil: "#1f2a2d", floor: "#8a6b4e", floorPat: "planks" },
-    lamps: [110, 210],
-    desks: [{ x: 70, y: 176 }, { x: 130, y: 176 }, { x: 190, y: 176 }, { x: 250, y: 176 }, { x: 100, y: 210 }, { x: 220, y: 210 }].map((d) => ({ ...d, w: 42, top: "#e8dccb", front: "#b5a690" })),
-    chairs: true,
-    count: (p) => Math.max(1, Math.min(6, Number(p && p.seats) || 3)),
-    back() {
-      const cols = ["#d1516f", "#5367c9", "#3c9a6b", "#f4b740", "#ff8fb5", "#7fc4e6"];
-      const cards = Array.from({ length: 10 }, (_, k) => `<rect x="${110 + (k % 5) * 20}" y="${34 + Math.floor(k / 5) * 22}" width="16" height="17" rx="1.5" fill="#fffaf0"/><rect x="${110 + (k % 5) * 20}" y="${34 + Math.floor(k / 5) * 22}" width="16" height="5" rx="1.5" fill="${cols[k % 6]}"/><line x1="${112 + (k % 5) * 20}" y1="${43 + Math.floor(k / 5) * 22}" x2="${124 + (k % 5) * 20}" y2="${43 + Math.floor(k / 5) * 22}" stroke="#c9c2b4"/>`).join("");
-      return `
-        <rect x="102" y="24" width="116" height="62" rx="3" fill="#c49a6c" stroke="#7a5a3a" stroke-width="3"/>${cards}
-        <rect x="40" y="30" width="44" height="80" rx="2" fill="#1c2a3a"/><rect x="43" y="33" width="38" height="74" fill="url(#sky-win)" opacity=".85"/><line x1="62" y1="33" x2="62" y2="107" stroke="#1c2a3a" stroke-width="2"/>
-        <rect x="236" y="30" width="44" height="80" rx="2" fill="#1c2a3a"/><rect x="239" y="33" width="38" height="74" fill="url(#sky-win)" opacity=".85"/><line x1="258" y1="33" x2="258" y2="107" stroke="#1c2a3a" stroke-width="2"/>
-        <rect x="130" y="100" width="60" height="40" rx="3" fill="#2a3a3e"/><circle cx="148" cy="120" r="9" fill="#3c9a6b"/><rect x="162" y="112" width="20" height="4" rx="2" fill="#e8dccb"/><rect x="162" y="120" width="14" height="4" rx="2" fill="#e8dccb"/>`;
-    },
-  },
-  bnolan: {
-    pal: { wall: "#33504b", side: "#27403c", ceil: "#1c2f2c", floor: "#9b7a5a", floorPat: "planks" },
-    lamps: [160],
-    desks: [{ x: 96, y: 188 }, { x: 160, y: 188 }, { x: 224, y: 188 }].map((d) => ({ ...d, top: "#efe6d6", front: "#b8ab95" })),
-    back(st) {
-      const on = st !== "parked";
-      return `
-        <rect x="92" y="24" width="136" height="80" rx="4" fill="#12161c" stroke="#0a0c10" stroke-width="3"/>
-        <rect x="97" y="29" width="126" height="70" fill="${on ? "#f6efe2" : "#232a2c"}"/>
-        ${on ? `<rect x="138" y="44" width="44" height="40" rx="20" fill="#1fa58a"><animate attributeName="rx" values="20;6;20" dur="5s" repeatCount="indefinite"/></rect>
-        <rect x="104" y="36" width="20" height="4" rx="2" fill="#2a3a38"/><rect x="104" y="88" width="30" height="3" rx="1.5" fill="#c4b9a6"/>` : ""}
-        <rect x="150" y="104" width="20" height="10" fill="#0a0c10"/><rect x="138" y="114" width="44" height="4" rx="2" fill="#0a0c10"/>
-        ${["#1fa58a", "#f4a63c", "#e2483d", "#33504b", "#f6efe2", "#3a2f3f"].map((c, k) => `<rect x="${38 + k * 8}" y="40" width="7" height="34" rx="1" fill="${c}"/>`).join("")}
-        <line x1="246" y1="150" x2="258" y2="60" stroke="#8a6640" stroke-width="3"/><line x1="282" y1="150" x2="270" y2="60" stroke="#8a6640" stroke-width="3"/>
-        <rect x="244" y="62" width="40" height="46" fill="#fbf4e8"/><circle cx="258" cy="80" r="8" fill="#f4a63c" opacity=".85"/><rect x="262" y="84" width="16" height="16" rx="4" fill="#1fa58a" opacity=".85"/>
-        <rect x="244" y="108" width="40" height="4" fill="#8a6640"/>
-        <rect x="40" y="128" width="16" height="18" rx="3" fill="#c96b3a"/><path d="M48,128 q-10,-16 -2,-22 q2,10 2,22 q4,-14 12,-16 q-6,8 -12,16" fill="#3c8a5b"/>`;
-    },
-  },
-};
-
-/* the café: parked crews sit here */
-const CAFE_SPOTS = [
-  { x: 74, y: 214, s: .82 }, { x: 246, y: 214, s: .82 }, { x: 160, y: 216, s: .82 },
-  { x: 110, y: 178, s: .66 }, { x: 210, y: 178, s: .66 }, { x: 160, y: 178, s: .66 },
-];
-function cafeGroup(crew, spot) {
-  const { x, y, s } = spot;
-  let g = "";
-  [-22, 0, 22].forEach((dx, i) => { g += person({ x: x + dx * s / .7, y: y - 8 * s / .7, s, crew, pose: "cafe", i, flip: dx > 0 }); });
-  const r = 34 * s / .7, ty = y - 19 * s / .7;
-  g += `<rect x="${x - 3}" y="${ty}" width="6" height="${y - ty}" fill="#b8466e"/>
-    <ellipse cx="${x}" cy="${y}" rx="${r * .45}" ry="${3 * s}" fill="#000" opacity=".25"/>
-    <ellipse cx="${x}" cy="${ty + 2}" rx="${r}" ry="${7 * s / .7}" fill="#d65a8c"/>
-    <ellipse cx="${x}" cy="${ty}" rx="${r}" ry="${7 * s / .7}" fill="#fff3e8"/>
-    <g transform="translate(${x} ${ty}) scale(${s / .7})">
-      <ellipse cx="-12" cy="0" rx="7" ry="2.6" fill="#fff"/><circle cx="-12" cy="-2" r="4.6" fill="#f4b37a"/><circle cx="-12" cy="-2.6" r="4.2" fill="#ff8fb5"/><circle cx="-12" cy="-2.4" r="1.5" fill="#fff3e8"/>
-      <rect x="6" y="-7" width="7" height="7" rx="1.5" fill="#fff8ee"/><rect x="6" y="-5" width="7" height="2" fill="#ff7a3d"/>
-    </g>`;
-  return g;
-}
-function cafeSVG(ctx) {
-  const parked = PROJECT_IDS.filter((id) => ctx.projects[id] && ctx.projects[id].state === "parked");
-  const donutCase = Array.from({ length: 12 }, (_, k) => {
-    const dx = 52 + (k % 6) * 17, dy = 104 + Math.floor(k / 6) * 15;
-    const ic = ["#ff8fb5", "#7a4a2b", "#ffd36b", "#fff3e8", "#ff8fb5", "#9de08f"][k % 6];
-    return `<circle cx="${dx}" cy="${dy}" r="6" fill="#e2a364"/><circle cx="${dx}" cy="${dy - .6}" r="5.2" fill="${ic}"/><circle cx="${dx}" cy="${dy - .4}" r="1.8" fill="#fbe1c8"/>`;
-  }).join("");
-  let s = shell({ wall: "#ff8a43", side: "#e8733a", ceil: "#c95a2c", floor: "#ffe9da", floorPat: "checker",
-    wallExtra: `<rect x="28" y="96" width="264" height="64" fill="#ff6fa3"/><rect x="28" y="94" width="264" height="4" fill="#fff3e8"/>` });
-  s += `
-    ${[[60, "#ff6fa3"], [110, "#fff3e8"], [160, "#ffd36b"], [210, "#fff3e8"], [260, "#ff6fa3"]].map(([x, c]) => `<rect x="${x - 18}" y="22" width="36" height="26" rx="4" fill="#3a2230"/><circle cx="${x}" cy="35" r="8" fill="${c}"/><circle cx="${x}" cy="35" r="3" fill="#3a2230"/>`).join("")}
-    <rect x="40" y="90" width="112" height="44" rx="4" fill="#ffffff55" stroke="#fff" stroke-width="2"/>${donutCase}
-    <rect x="34" y="132" width="186" height="28" rx="3" fill="#d6467e"/><rect x="34" y="132" width="186" height="6" rx="2" fill="#fff3e8"/>
-    <rect x="232" y="88" width="42" height="44" rx="4" fill="#3a3540"/><rect x="238" y="96" width="30" height="12" rx="2" fill="#6b6575"/><rect x="246" y="112" width="12" height="12" rx="1" fill="#fff8ee"/>
-    <rect x="228" y="132" width="52" height="28" rx="3" fill="#ff8a43"/><rect x="228" y="132" width="52" height="6" rx="2" fill="#fff3e8"/>
-    <g fill="#ff6fa3"><rect x="2" y="168" width="20" height="40" rx="5"/><rect x="298" y="168" width="20" height="40" rx="5"/></g>`;
-  s += lamps([90, 160, 230], true, "#ff6fa3");
-  /* back tables first so front tables overlap them */
-  const placed = parked.map((id, k) => ({ id, spot: CAFE_SPOTS[k] })).filter((p) => p.spot);
-  placed.filter((p) => p.spot.y < 200).forEach((p) => { s += cafeGroup(p.id, p.spot); });
-  placed.filter((p) => p.spot.y >= 200).forEach((p) => { s += cafeGroup(p.id, p.spot); });
-  return `<svg viewBox="0 0 320 220" role="img" aria-label="Donut Café Lounge${parked.length ? ", with " + parked.length + " parked crew" + (parked.length > 1 ? "s" : "") : ", empty"}">${s}</svg>`;
-}
-function emptySVG() {
-  let s = shell({ wall: "#2e3140", side: "#242734", ceil: "#1b1d27", floor: "#4a4c58", floorPat: "planks" });
-  s += `<rect x="70" y="150" width="34" height="24" rx="2" fill="#a07a52"/><rect x="70" y="150" width="34" height="6" fill="#8a6640"/>
-    <rect x="96" y="160" width="26" height="20" rx="2" fill="#b58a5e"/>
-    <line x1="220" y1="190" x2="236" y2="96" stroke="#9aa0ad" stroke-width="3"/><line x1="246" y1="190" x2="254" y2="96" stroke="#9aa0ad" stroke-width="3"/>
-    ${[0, 1, 2, 3].map((k) => `<line x1="${222 + k * 3.6}" y1="${172 - k * 22}" x2="${245 + k * 2}" y2="${172 - k * 22}" stroke="#9aa0ad" stroke-width="2.5"/>`).join("")}
-    <rect x="160" y="186" width="16" height="16" rx="2" fill="#e8e2d6"/><ellipse cx="168" cy="186" rx="8" ry="2.4" fill="#cfc6b6"/>`;
-  s += lamps([160], false);
-  s += `<rect width="320" height="220" fill="#05070f" opacity=".55"/>`;
-  return `<svg viewBox="0 0 320 220" role="img" aria-label="Empty room for a future project">${s}</svg>`;
-}
-
-function roomSVG(id, ctx) {
-  const sc = SCENES[id];
-  const p = ctx.projects[id];
-  const st = p ? p.state : "none";
-  const lit = st !== "parked";
-  let s = shell(sc.pal) + sc.back(st, ctx) + lamps(sc.lamps, lit);
-  const n = sc.count ? sc.count(p) : 3;
-  sc.desks.forEach((d, i) => {
-    const seated = st === "active" && i < n;
-    if (sc.chairs && !seated) s += chair(d);
-    if (seated) s += person({ x: d.x, y: d.y - 4, s: .9, crew: id, pose: "sit", i });
-    s += desk(d, seated || (lit && st !== "none" && !sc.chairs));
-  });
-  const cx = 160, cy = 215, cs = 1;
-  if (st === "blocked") {
-    s += person({ x: cx + 4, y: cy - 22, s: .78, crew: id, pose: "hips", i: 2 });
-    s += problem(id, cx, cy - 4);
-    s += person({ x: cx - 52, y: cy, s: cs, crew: id, pose: "hips", i: 0 });
-    s += person({ x: cx + 52, y: cy, s: cs, crew: id, pose: "scratch", i: 1, flip: true });
-    [[cx - 52, cy - 76], [cx + 60, cy - 80], [cx + 4, cy - 86]].forEach(([qx, qy], k) => {
-      s += `<g class="qm" style="animation-delay:${-k * .5}s"><circle cx="${qx}" cy="${qy}" r="7.5" fill="#fff"/><text x="${qx}" y="${qy + 4}" text-anchor="middle" font-family="Fredoka, sans-serif" font-weight="700" font-size="12" fill="#e5484d">?</text></g>`;
-    });
-  } else if (st === "review") {
-    s += person({ x: cx - 46, y: cy, s: cs, crew: id, pose: "point", i: 0 });
-    s += person({ x: cx + 46, y: cy, s: cs, crew: id, pose: "point", i: 2, flip: true });
-    s += person({ x: cx, y: cy - 2, s: cs, crew: id, pose: "hold", i: 1, board: BOARDS[id] });
-    s += `<g fill="#fff7c2"><path d="M${cx - 34},${cy - 100} l2,5 l5,2 l-5,2 l-2,5 l-2,-5 l-5,-2 l5,-2 z" class="blink"/><path d="M${cx + 34},${cy - 94} l1.5,4 l4,1.5 l-4,1.5 l-1.5,4 l-1.5,-4 l-4,-1.5 l4,-1.5 z" class="blink" style="animation-delay:-.5s"/></g>`;
-  } else if (st === "shipped") {
-    [-52, 0, 52].forEach((dx, i) => { s += person({ x: cx + dx, y: cy, s: cs, crew: id, pose: "cheer", i }); });
-    const cc = ["#f05a4b", "#f4b740", "#52c47d", "#7aa7ff", "#ff8fb5", "#b58cf5"];
-    for (let k = 0; k < 28; k++) {
-      const x = 40 + ((k * 97) % 240), y = 10 + ((k * 37) % 40);
-      s += `<rect x="${x}" y="${y}" width="4" height="7" rx="1" fill="${cc[k % 6]}" class="cf" style="animation-delay:${-((k * .31) % 2.8).toFixed(2)}s"/>`;
-    }
-  }
-  if (!lit) s += `<rect width="320" height="220" fill="#05070f" opacity=".62"/>`;
-  if (st === "blocked") {
-    s += `<rect width="320" height="220" fill="url(#red-glow)" class="pulse"/>
-      <rect x="152" y="12" width="16" height="4" fill="#2a2124"/><path d="M153,16 Q160,4 167,16 Z" fill="#ff3b30" class="blink"/>`;
-  }
-  const name = (p && p.name) || ROOMS.find((r) => r.id === id).label;
-  const label = p ? `${name}: ${STATE_LABEL[st] || st}` : name;
-  return `<svg viewBox="0 0 320 220" role="img" aria-label="${esc(label)}">${s}</svg>`;
-}
-
-/* ---------- page ---------- */
+/* ============================================================ page state */
 const state = { projects: {}, loaded: false, unavailable: false, db: null, canWrite: null, openId: null };
-const building = document.getElementById("building");
-
 const ICON_EXT = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3h4v4M13 3 7.5 8.5M12 9.5V13H3V4h3.5"/></svg>`;
 const ICON_TERM = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg>`;
+const parkedIds = () => PROJECT_IDS.filter((id) => state.projects[id] && state.projects[id].state === "parked");
+const nameOf = (id) => (state.projects[id] && state.projects[id].name) || PROJECTS[id].label;
 
-function placardHTML(id) {
-  const p = state.projects[id];
-  const room = ROOMS.find((r) => r.id === id);
-  if (id === "cafe") {
-    const parked = PROJECT_IDS.filter((k) => state.projects[k] && state.projects[k].state === "parked");
-    return `<div class="placard">
-      <div class="pl-head"><span class="pl-name">Donut Café Lounge</span><span class="chip parked">${parked.length} parked</span></div>
-      <p class="pl-step">${parked.length ? "On break here:" : state.loaded ? "No crews on break." : "Checking who's on break…"}</p>
-      <div class="cafe-who">${parked.map((k) => `<span>${esc(state.projects[k].name || k)}</span>`).join("")}</div>
-    </div>`;
+/* ============================================================ 3D building */
+const stage = document.getElementById("stage"), canvas = document.getElementById("c"), labelsEl = document.getElementById("labels");
+let three = null;
+try { if (window.THREE) three = buildWorld(); } catch (e) { console.error(e); three = null; }
+if (!three) { canvas.hidden = true; document.getElementById("fallback").hidden = false; stage.querySelector(".hint").hidden = true; }
+
+function buildWorld() {
+  const T = THREE;
+  const renderer = new T.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = T.sRGBEncoding;
+  renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+  renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap;
+  const scene = new T.Scene();
+  const camera = new T.OrthographicCamera(-1, 1, 1, -1, 1, 600);
+  const target = new T.Vector3(25, 1.2, 11);
+  const view = { yaw: -0.16, pitch: 0.7 };
+  const tickers = [];
+
+  /* ---------- caches */
+  const GEO = {}, MAT = {};
+  const geo = (k, f) => GEO[k] || (GEO[k] = f());
+  function mat(color, o = {}) {
+    const k = color + JSON.stringify(o);
+    if (!o.map && !o.fresh && MAT[k]) return MAT[k];
+    const m = o.basic ? new T.MeshBasicMaterial({ color, map: o.map || null, transparent: !!o.transparent, opacity: o.opacity ?? 1, side: o.side || T.FrontSide })
+      : new T.MeshStandardMaterial({ color, roughness: o.rough ?? .72, metalness: o.metal ?? 0, emissive: o.emissive || 0x000000, emissiveIntensity: o.ei ?? 1, map: o.map || null, transparent: !!o.transparent, opacity: o.opacity ?? 1, side: o.side || T.FrontSide });
+    if (o.offset) { m.polygonOffset = true; m.polygonOffsetFactor = -2; m.polygonOffsetUnits = -2; }
+    if (!o.map && !o.fresh) MAT[k] = m;
+    return m;
   }
-  const name = (p && p.name) || room.label;
-  let chip, step;
-  if (p) {
-    chip = `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state] || p.state)}</span>`;
-    step = `<b>${esc(STATE_LABEL[p.state] || "")}:</b> ${esc(p.step || "No current step saved.")}`;
-  } else {
-    chip = `<span class="chip none">—</span>`;
-    step = state.unavailable ? "Status can't load in this view." : state.loaded ? "No status saved yet." : "Checking in…";
+  function rrShape(w, h, r) {
+    const s = new T.Shape(), x = -w / 2, y = -h / 2;
+    s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r);
+    s.quadraticCurveTo(x + w, y + h, x + w - r, y + h); s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r);
+    s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
   }
-  const open = p && p.sessionUrl ? `<a class="btn" href="${esc(p.sessionUrl)}" target="_blank" rel="noopener">${ICON_EXT}Open workspace</a>` : "";
-  return `<div class="placard">
-    <div class="pl-head"><span class="pl-name">${esc(name)}</span>${chip}</div>
-    <p class="pl-step">${step}</p>
-    <div class="pl-actions">${open}<button class="btn ghost" type="button" data-open="${id}">${ICON_TERM}Terminal</button></div>
-  </div>`;
+  function rbox(w, h, d, r = .08) {
+    return geo(`rb${w},${h},${d},${r}`, () => {
+      r = Math.max(.002, Math.min(r, w / 2.2, h / 2.2, d / 2.2)); const b = r * .6;
+      const g = new T.ExtrudeGeometry(rrShape(w - 2 * b, h - 2 * b, Math.max(.001, r - b)), { depth: Math.max(.001, d - 2 * b), bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 2, curveSegments: 3 });
+      g.translate(0, 0, -(d - 2 * b) / 2); g.computeVertexNormals(); g.computeBoundingBox(); return g;
+    });
+  }
+  const sphere = (r, w = 20, h = 14) => geo(`sp${r},${w},${h}`, () => new T.SphereGeometry(r, w, h));
+  const capsule = (r, l) => geo(`ca${r},${l}`, () => new T.CapsuleGeometry(r, l, 4, 12));
+  const cyl = (rt, rb, h, s = 18) => geo(`cy${rt},${rb},${h},${s}`, () => new T.CylinderGeometry(rt, rb, h, s));
+  const plane = (w, h) => geo(`pl${w},${h}`, () => new T.PlaneGeometry(w, h));
+  function mesh(g, m, shadow = true) { const x = new T.Mesh(g, typeof m === "string" ? mat(m) : m); x.castShadow = shadow; x.receiveShadow = true; return x; }
+  /* place a mesh with its bottom at y (or its center, with o.center) */
+  function put(parent, g, m, x, y, z, o = {}) {
+    const ms = mesh(g, m, o.shadow ?? true);
+    if (!g.boundingBox) g.computeBoundingBox();
+    ms.position.set(x, o.center ? y : y - g.boundingBox.min.y, z);
+    if (o.ry) ms.rotation.y = o.ry; if (o.rx) ms.rotation.x = o.rx; if (o.rz) ms.rotation.z = o.rz;
+    parent.add(ms); return ms;
+  }
+  function tex(w, h, draw, rep) {
+    const cv = document.createElement("canvas"); cv.width = w; cv.height = h; draw(cv.getContext("2d"), w, h);
+    const t = new T.CanvasTexture(cv); t.encoding = T.sRGBEncoding; t.anisotropy = 4;
+    if (rep) { t.wrapS = t.wrapT = T.RepeatWrapping; t.repeat.set(rep[0], rep[1]); }
+    t.userData = { cv }; return t;
+  }
+  function redraw(t, draw) { const cv = t.userData.cv, c = cv.getContext("2d"); c.clearRect(0, 0, cv.width, cv.height); draw(c, cv.width, cv.height); t.needsUpdate = true; }
+  /* a textured plane on a wall. face: back (facing +z), left (facing +x), right (facing -x) */
+  function decal(parent, t, w, h, x, y, z, face = "back", lit = true) {
+    const m = lit ? mat("#ffffff", { basic: true, map: t }) : mat("#ffffff", { map: t, rough: .85 });
+    const p = new T.Mesh(plane(w, h), m); p.position.set(x, y, z);
+    if (face === "left") p.rotation.y = Math.PI / 2; if (face === "right") p.rotation.y = -Math.PI / 2;
+    p.receiveShadow = !lit; parent.add(p); return p;
+  }
+
+  /* ---------- lights */
+  scene.add(new T.HemisphereLight(0xffeedd, 0x2a2230, 0.5));
+  scene.add(new T.AmbientLight(0x40384f, 0.12));
+  const sun = new T.DirectionalLight(0xffc9a0, 1.15);
+  sun.position.set(-18, 42, 34); sun.target.position.set(25, 0, 10);
+  sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
+  Object.assign(sun.shadow.camera, { left: -42, right: 42, top: 34, bottom: -34, near: 1, far: 130 });
+  sun.shadow.bias = -0.0006; sun.shadow.normalBias = 0.03;
+  scene.add(sun, sun.target);
+
+  /* ---------- textures */
+  const floorTex = {
+    tiles: (base) => tex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(0,0,0,.13)"; c.lineWidth = 3; for (let i = 0; i <= 4; i++) { c.beginPath(); c.moveTo(i * 64, 0); c.lineTo(i * 64, h); c.stroke(); c.beginPath(); c.moveTo(0, i * 64); c.lineTo(w, i * 64); c.stroke(); } }, [2.5, 2.5]),
+    planks: (base) => tex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h); for (let r = 0; r < 8; r++) { c.fillStyle = r % 2 ? "rgba(255,255,255,.05)" : "rgba(0,0,0,.05)"; c.fillRect(0, r * 32, w, 32); c.fillStyle = "rgba(0,0,0,.16)"; c.fillRect(0, r * 32, w, 2); c.fillRect(((r * 97) % 200) + 20, r * 32, 2, 32); } }, [2.5, 2.5]),
+    checker: () => tex(128, 128, (c) => { c.fillStyle = "#fff0e4"; c.fillRect(0, 0, 128, 128); c.fillStyle = "#ff92b6"; c.fillRect(0, 0, 64, 64); c.fillRect(64, 64, 64, 64); }, [15, 5]),
+    concrete: (base) => tex(256, 256, (c, w, h) => { c.fillStyle = base; c.fillRect(0, 0, w, h); for (let k = 0; k < 500; k++) { c.fillStyle = `rgba(0,0,0,${((k * 37) % 7) / 100})`; c.fillRect((k * 97) % w, (k * 61) % h, 3, 3); } c.fillStyle = "#e6b422"; for (let k = 0; k < 9; k++) { c.save(); c.translate(k * 32, 230); c.rotate(-.6); c.fillRect(0, 0, 12, 44); c.restore(); } }, [1, 1]),
+  };
+  const skyTex = tex(256, 320, (c, w, h) => {
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, "#28306a"); g.addColorStop(.55, "#9c4f7c"); g.addColorStop(1, "#f6a35c"); c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = "#fff"; for (let k = 0; k < 30; k++) c.fillRect((k * 53) % w, (k * 29) % (h * .4), 2, 2);
+    c.fillStyle = "#3a2a4a"; let x = 0; while (x < w) { const bw = 20 + ((x * 7) % 30), bh = 40 + ((x * 13) % 90); c.fillRect(x, h - bh, bw, bh); x += bw + 2; }
+    c.fillStyle = "#ffd28f"; for (let k = 0; k < 40; k++) c.fillRect((k * 37) % w, h - 10 - ((k * 23) % 80), 3, 4);
+  });
+  const screenCode = tex(128, 80, (c, w, h) => { c.fillStyle = "#162238"; c.fillRect(0, 0, w, h); const cols = ["#7fd0ff", "#9de08f", "#f4b740", "#ff8fb5"]; for (let r = 0; r < 7; r++) { c.fillStyle = cols[r % 4]; c.fillRect(10 + (r % 3) * 8, 8 + r * 10, 30 + ((r * 37) % 70), 5); } });
+
+  /* ---------- builders shared by rooms */
+  function chair(parent, x, z, color = "#3a3550", ry = 0) {
+    const g = new T.Group(); g.position.set(x, 0, z); g.rotation.y = ry;
+    put(g, cyl(.05, .05, .4, 8), "#2a2730", 0, 0, 0);
+    put(g, rbox(.62, .12, .6, .05), color, 0, .4, 0);
+    put(g, rbox(.62, .62, .1, .05), color, 0, .5, -.3);
+    parent.add(g); return g;
+  }
+  /* a desk the crew sits behind, facing the camera (+z). Returns the seat position. */
+  function desk(parent, x, z, o = {}) {
+    const w = o.w || 1.7, top = o.top || "#d8b78e", body = o.body || "#9c7652";
+    put(parent, rbox(w, .1, .85, .04), top, x, .8, z);
+    put(parent, rbox(w - .1, .78, .08, .03), body, x, 0, z + .35);
+    put(parent, rbox(.08, .78, .7, .03), body, x - w / 2 + .1, 0, z);
+    put(parent, rbox(.08, .78, .7, .03), body, x + w / 2 - .1, 0, z);
+    const mon = new T.Group(); mon.position.set(x, .9, z - .1);
+    put(mon, rbox(.7, .04, .46, .02), "#3a3f52", 0, 0, -.12);
+    const lid = new T.Group(); lid.position.set(0, .03, .1); lid.rotation.x = .25; mon.add(lid);
+    put(lid, rbox(.7, .44, .03, .02), "#3a3f52", 0, 0, 0);
+    put(lid, sphere(.03, 8, 6), mat("#bfe9ff", { basic: true }), 0, .2, .02, { shadow: false });
+    const scr = new T.Mesh(plane(.64, .38), mat("#ffffff", { basic: true, map: screenCode }));
+    scr.position.set(0, .22, -.02); scr.rotation.y = Math.PI; lid.add(scr);
+    parent.add(mon);
+    if (!o.noChair) chair(parent, x, z - .95, o.chair || "#3a3550");
+    return { x, z: z - .95, screens: [scr] };
+  }
+  function plant(parent, x, z, s = 1) {
+    const g = new T.Group(); g.position.set(x, 0, z); g.scale.setScalar(s);
+    put(g, cyl(.3, .24, .5, 14), "#c96b3a", 0, 0, 0);
+    [[0, .9, 0, .42], [.2, 1.2, .1, .3], [-.18, 1.15, -.1, .32], [0, 1.45, 0, .26]].forEach(([a, b, cc, r]) => put(g, sphere(r, 12, 10), "#3f9a5c", a, b - r, cc));
+    parent.add(g);
+  }
+  function bubbleTex(ch, bg, fg) { return tex(64, 64, (c) => { c.fillStyle = bg; c.beginPath(); c.arc(32, 30, 26, 0, 7); c.fill(); c.beginPath(); c.moveTo(24, 50); c.lineTo(32, 63); c.lineTo(38, 50); c.fill(); c.fillStyle = fg; c.font = "700 36px Fredoka, sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(ch, 32, 32); }); }
+  const qTex = bubbleTex("?", "#ffffff", "#e5484d"), exTex = bubbleTex("!", "#f05a4b", "#ffffff");
+  const sparkTex = tex(64, 64, (c) => { c.fillStyle = "#fff7c2"; c.beginPath(); c.moveTo(32, 2); c.quadraticCurveTo(36, 28, 62, 32); c.quadraticCurveTo(36, 36, 32, 62); c.quadraticCurveTo(28, 36, 2, 32); c.quadraticCurveTo(28, 28, 32, 2); c.fill(); });
+  function sprite(t, s) { const sp = new T.Sprite(new T.SpriteMaterial({ map: t, depthWrite: false })); sp.scale.set(s, s, 1); return sp; }
+
+  /* ---------- people with project snapbacks */
+  const PS = .8;
+  const capLogo = {};
+  for (const id of PROJECT_IDS) capLogo[id] = tex(128, 128, (c) => drawIcon(c, id, 128, "#ffffff", id === "kw" ? "#ff8a3a" : PROJECTS[id].brim));
+  function person(id, i, pose) {
+    const P = PROJECTS[id], s = PS;
+    const skin = SKINS[(i + P.off) % SKINS.length], hair = HAIRS[(i * 2 + P.off) % HAIRS.length], shirt = P.shirts[i % P.shirts.length];
+    const g = new T.Group(); g.scale.setScalar(s); g.userData.room = id;
+    const legs = [-1, 1].map((sx) => { const pv = new T.Group(); pv.position.set(sx * .2, .75, 0); const l = mesh(capsule(.16, .42), P.pants); l.position.y = -.36; pv.add(l); const sh = mesh(rbox(.32, .17, .46, .07), "#2a2430"); sh.position.set(0, -.68, .07); pv.add(sh); g.add(pv); return pv; });
+    const body = mesh(capsule(.43, .34), shirt); body.position.y = 1.28; body.scale.z = .84; g.add(body);
+    const arms = [-1, 1].map((sx) => { const pv = new T.Group(); pv.position.set(sx * .5, 1.6, 0); const a = mesh(capsule(.13, .4), shade(shirt, -8)); a.position.y = -.3; pv.add(a); const hd = mesh(sphere(.15, 12, 10), skin); hd.position.y = -.64; pv.add(hd); g.add(pv); return pv; });
+    const head = new T.Group(); head.position.y = 2.16; g.add(head);
+    head.add(mesh(sphere(.62, 24, 18), skin));
+    const hb = mesh(sphere(.63, 20, 14), hair); hb.position.set(0, .02, -.1); hb.scale.set(1, .96, .92); head.add(hb);
+    [-.21, .21].forEach((x) => { const e = mesh(sphere(.09, 10, 8), "#241c2a", false); e.position.set(x, -.1, .565); e.scale.set(1, 1.3, .5); head.add(e); const gl = mesh(sphere(.024, 6, 6), mat("#ffffff", { basic: true }), false); gl.position.set(x + .03, -.06, .605); head.add(gl); });
+    [-.36, .36].forEach((x) => { const ck = mesh(sphere(.1, 10, 8), mat("#ff8f96", { transparent: true, opacity: .55 }), false); ck.position.set(x, -.22, .49); ck.scale.set(1, .6, .4); head.add(ck); });
+    const mouth = mesh(geo("mouth", () => new T.TorusGeometry(.1, .025, 6, 14, Math.PI)), "#5a2a33", false);
+    mouth.position.set(0, -.25, .585); mouth.rotation.z = Math.PI; head.add(mouth);
+    /* snapback: crown, band, flat brim, front logo, top button */
+    const crown = mesh(geo("crown", () => new T.SphereGeometry(.665, 26, 12, 0, Math.PI * 2, 0, Math.PI / 2)), mat(P.cap, { side: T.DoubleSide, rough: .6 }));
+    crown.position.y = .14; crown.scale.y = .86; head.add(crown);
+    const band = mesh(cyl(.668, .668, .1, 26), shade(P.cap, -18)); band.position.y = .15; head.add(band);
+    const brim = mesh(rbox(.95, .06, .44, .03), P.brim); brim.position.set(0, .2, .76); brim.rotation.x = -.42; head.add(brim);
+    const logo = new T.Mesh(plane(.56, .56), mat("#ffffff", { map: capLogo[id], transparent: true, offset: true, rough: .6 }));
+    logo.position.set(0, .45, .55); logo.rotation.x = -.62; head.add(logo);
+    const btn = mesh(sphere(.07, 8, 6), P.brim); btn.position.y = .72; head.add(btn);
+    const p = { g, legs, arms, head, mouth, pose, i, base: 0 };
+    setPose(p, pose);
+    return p;
+  }
+  function setPose(p, pose) {
+    const [L, R] = p.arms;
+    p.legs.forEach((l) => (l.rotation.x = 0)); L.rotation.set(0, 0, -.12); R.rotation.set(0, 0, .12);
+    p.mouth.rotation.z = Math.PI; p.mouth.position.y = -.25;
+    if (pose === "sit" || pose === "cafe") p.legs.forEach((l) => (l.rotation.x = -Math.PI / 2));
+    if (pose === "sit") { L.rotation.set(-1.15, 0, -.12); R.rotation.set(-1.15, 0, .12); }
+    if (pose === "cafe") { R.rotation.set(-1.25, 0, .1); const cup = new T.Group(); put(cup, cyl(.13, .11, .26, 12), "#fff8ee", 0, -.12, 0); put(cup, cyl(.135, .135, .06, 12), "#ff7a3d", 0, -.02, 0); cup.position.set(0, -.78, .05); R.add(cup); }
+    if (pose === "hips" || pose === "scratch") { L.rotation.set(.25, 0, -.62); R.rotation.set(.25, 0, .62); p.mouth.rotation.z = 0; p.mouth.position.y = -.3; }
+    if (pose === "scratch") R.rotation.set(-.3, 0, 2.55);
+    if (pose === "cheer") { L.rotation.set(0, 0, -2.5); R.rotation.set(0, 0, 2.5); }
+    if (pose === "point") R.rotation.set(-1.5, 0, .5);
+    if (pose === "hold") { R.rotation.set(-.15, 0, 2.85); L.rotation.set(-.6, 0, -.5); }
+  }
+  function animatePerson(p, t) {
+    const k = t + p.i * .73, [L, R] = p.arms;
+    switch (p.pose) {
+      case "sit": p.head.position.y = 2.16 + Math.sin(k * 7) * .025; L.rotation.x = -1.15 + Math.sin(k * 14) * .08; R.rotation.x = -1.15 + Math.cos(k * 14) * .08; break;
+      case "hips": p.g.rotation.z = Math.sin(k * 1.6) * .03; break;
+      case "scratch": R.rotation.z = 2.55 + Math.sin(k * 9) * .12; p.g.rotation.z = Math.sin(k * 1.6) * .03; break;
+      case "cheer": p.g.position.y = p.base + Math.abs(Math.sin(k * 5)) * .32; L.rotation.z = -2.5 - Math.sin(k * 10) * .2; R.rotation.z = 2.5 + Math.sin(k * 10) * .2; break;
+      case "hold": p.g.position.y = p.base + Math.abs(Math.sin(k * 2.2)) * .05; break;
+      case "point": p.arms[p.pointArm || 1].rotation.x = -1.5 + Math.sin(k * 3) * .1; break;
+      case "cafe": { const ph = (k % 5) / 5; R.rotation.x = ph > .8 ? -1.25 - Math.sin((ph - .8) / .2 * Math.PI) * .9 : -1.25; break; }
+    }
+  }
+  function seat(p, x, z, ry = 0, seatH = .48) { p.g.position.set(x, seatH - .75 * PS, z); p.base = p.g.position.y; p.g.rotation.y = ry; }
+  function stand(p, x, z, ry = 0) { p.g.position.set(x, 0, z); p.base = 0; p.g.rotation.y = ry; }
+
+  /* ---------- the building shell */
+  const ROOM = 10, H_BACK = 6, H_FRONT = 2.4;
+  const NEUTRAL = "#efe3cf", FACADE = "#6b6378";
+  const world = new T.Group(); scene.add(world);
+  const ground = mesh(new T.PlaneGeometry(400, 400), mat("#1f2b25", { rough: 1 }), false); ground.rotation.x = -Math.PI / 2; ground.position.set(25, -.62, 10); world.add(ground);
+  put(world, new T.BoxGeometry(56, .6, 27), "#2b2834", 25, -.6, 11.2);
+  put(world, new T.BoxGeometry(70, .12, 5), "#4e4a56", 25, -.6, 26.5);
+  put(world, new T.BoxGeometry(400, .05, 12), "#1a1a21", 25, -.62, 35);
+  for (let k = -12; k < 16; k++) put(world, new T.BoxGeometry(2.4, .02, .25), mat("#e2cf86", { emissive: 0x40381a }), k * 5, -.57, 35, { shadow: false });
+  const ROOM_SPECS = {
+    jetstream: { wall: "#cfe0f2", floor: floorTex.tiles("#c3cddb") },
+    pace: { wall: "#cfeade", floor: floorTex.tiles("#cfd3db") },
+    secondbrain: { wall: "#d9cbe8", floor: floorTex.planks("#8f6a4e") },
+    upwork: { wall: "#cdeaf0", floor: floorTex.planks("#c9b08f") },
+    bnolan: { wall: "#f3e9d6", floor: floorTex.planks("#a9805c") },
+    kw: { wall: "#d5dde3", floor: floorTex.concrete("#a3a9ad") },
+    cafe: { wall: "#ff9a52", floor: floorTex.checker() },
+    empty: { wall: "#d8d2c8", floor: floorTex.planks("#8d8a90") },
+  };
+  const rooms = {};
+  function makeRoom(id, col, row, w = 1) {
+    const g = new T.Group(); g.position.set(col * ROOM, 0, row * ROOM); g.userData.room = id; world.add(g);
+    const fl = new T.Mesh(new T.BoxGeometry(ROOM * w - .3, .2, ROOM - .3), mat("#ffffff", { map: ROOM_SPECS[id].floor, rough: .8 }));
+    fl.position.set(ROOM * w / 2, -.1, ROOM / 2); fl.receiveShadow = true; g.add(fl);
+    const light = new T.PointLight(0xffd7a0, 1.0, 15, 1.6); light.position.set(ROOM * w / 2, 5.2, ROOM / 2 + .5); g.add(light);
+    const r = { id, g, w, row, light, screens: [], crew: new T.Group(), extras: new T.Group() };
+    g.add(r.crew, r.extras);
+    rooms[id] = r; return r;
+  }
+  for (const id of PROJECT_IDS) makeRoom(id, PROJECTS[id].col, PROJECTS[id].row);
+  makeRoom("cafe", 1, 1, 3); makeRoom("empty", 4, 1);
+  rooms.cafe.light.distance = 34; rooms.cafe.light.intensity = 1.25;
+  rooms.empty.light.intensity = 0;
+
+  function wall(x1, z1, x2, z2, h, th = .32, color = NEUTRAL) {
+    const len = Math.hypot(x2 - x1, z2 - z1), along = Math.abs(x2 - x1) > Math.abs(z2 - z1);
+    const m = mesh(rbox(along ? len + th : th, h, along ? th : len + th, .04), color);
+    m.position.set((x1 + x2) / 2, h / 2, (z1 + z2) / 2); world.add(m);
+    put(world, rbox(along ? len + th + .06 : th + .1, .14, along ? th + .1 : len + th + .06, .04), "#4a4458", (x1 + x2) / 2, h, (z1 + z2) / 2);
+  }
+  function paint(roomId, face, a1, a2, h, at) {
+    /* back: wall at z=at facing +z; front: facing -z; left: wall at x=at facing +x; right: facing -x */
+    const len = a2 - a1, col = ROOM_SPECS[roomId].wall;
+    const p = new T.Mesh(plane(len, h), mat(col, { rough: .9 })); p.receiveShadow = true;
+    const sk = new T.Mesh(plane(len, .25), mat(shade(col, -22)));
+    const mid = (a1 + a2) / 2;
+    if (face === "back") { p.position.set(mid, h / 2, at + .165); sk.position.set(mid, .125, at + .17); }
+    if (face === "front") { p.position.set(mid, h / 2, at - .165); p.rotation.y = Math.PI; sk.position.set(mid, .125, at - .17); sk.rotation.y = Math.PI; }
+    if (face === "left") { p.position.set(at + .165, h / 2, mid); p.rotation.y = Math.PI / 2; sk.position.set(at + .17, .125, mid); sk.rotation.y = Math.PI / 2; }
+    if (face === "right") { p.position.set(at - .165, h / 2, mid); p.rotation.y = -Math.PI / 2; sk.position.set(at - .17, .125, mid); sk.rotation.y = -Math.PI / 2; }
+    world.add(p, sk);
+  }
+  wall(0, 0, 50, 0, H_BACK, .4, FACADE);
+  wall(0, 0, 0, 10, H_BACK, .4, FACADE); wall(50, 0, 50, 10, H_BACK, .4, FACADE);
+  wall(0, 10, 0, 20, H_FRONT, .4, FACADE); wall(50, 10, 50, 20, H_FRONT, .4, FACADE);
+  [10, 20, 30, 40].forEach((x) => wall(x, 0, x, 10, H_BACK - .6));
+  wall(0, 10, 50, 10, 1.2);
+  wall(10, 10, 10, 20, H_FRONT); wall(40, 10, 40, 20, H_FRONT);
+  wall(0, 20, 21.5, 20, 1.0, .4, FACADE); wall(28.5, 20, 50, 20, 1.0, .4, FACADE);
+  [22.6, 27.4].forEach((x) => { const d = mesh(rbox(2.0, 2.0, .08, .04), mat("#bfe7ff", { transparent: true, opacity: .28, rough: .1 }), false); d.position.set(x, 1.0, 20); world.add(d); put(world, rbox(.12, 2.1, .14, .03), "#3a3540", x - 1, 0, 20); put(world, rbox(.12, 2.1, .14, .03), "#3a3540", x + 1, 0, 20); });
+  put(world, rbox(5.6, .04, 1.4, .02), "#2a2730", 25, 0, 21.2);
+  ["jetstream", "pace", "secondbrain", "upwork", "bnolan"].forEach((id) => { const c = PROJECTS[id].col; paint(id, "back", c * 10, c * 10 + 10, H_BACK, 0); paint(id, "left", 0, 10, H_BACK - .6, c * 10); paint(id, "right", 0, 10, H_BACK - .6, c * 10 + 10); });
+  paint("kw", "left", 10, 20, H_FRONT, 0); paint("kw", "right", 10, 20, H_FRONT, 10); paint("kw", "back", 0, 10, 1.2, 10); paint("kw", "front", 0, 10, 1.0, 20);
+  paint("cafe", "left", 10, 20, H_FRONT, 10); paint("cafe", "right", 10, 20, H_FRONT, 40); paint("cafe", "back", 10, 40, 1.2, 10);
+  paint("empty", "left", 10, 20, H_FRONT, 40); paint("empty", "right", 10, 20, H_FRONT, 50); paint("empty", "back", 40, 50, 1.2, 10);
+  /* exterior */
+  function tree(x, z, s = 1) { const g = new T.Group(); g.position.set(x, -.6, z); g.scale.setScalar(s); put(g, cyl(.18, .25, 1.4, 8), "#6b4a2e", 0, 0, 0); put(g, sphere(1.2, 14, 10), "#3c8a52", 0, 1.1, 0); put(g, sphere(.9, 12, 9), "#4fa363", .5, 1.9, .2); put(g, sphere(.8, 12, 9), "#3c8a52", -.6, 1.6, -.2); world.add(g); }
+  [[-4, 4], [-5, 14], [-3, 23], [54, 3], [55, 13], [53, 23], [8, 25], [42, 25], [18, 25.5], [33, 25.5], [-6, -6], [10, -5], [30, -6], [48, -5]].forEach(([x, z], k) => tree(x, z, .8 + (k % 3) * .15));
+  function lamp(x, z) { put(world, cyl(.07, .1, 3.4, 8), "#2a2730", x, -.6, z); put(world, sphere(.24, 12, 10), mat("#ffe3a8", { basic: true }), x, 2.6, z, { shadow: false }); const l = new T.PointLight(0xffd59a, .7, 9, 2); l.position.set(x, 2.8, z); world.add(l); }
+  lamp(4, 26); lamp(46, 26);
+  function bench(x, z) { put(world, rbox(2.2, .14, .6, .05), "#9c6b3e", x, -.18, z); put(world, rbox(2.2, .5, .12, .05), "#9c6b3e", x, -.05, z - .3); put(world, rbox(.12, .45, .5, .03), "#2a2730", x - .9, -.6, z); put(world, rbox(.12, .45, .5, .03), "#2a2730", x + .9, -.6, z); }
+  bench(13, 25.8); bench(37, 25.8);
+  [[-14, -10, 10, 14], [64, -8, 12, 18], [24, -18, 40, 8]].forEach(([x, z, w, h]) => { put(world, rbox(w, h, 9, .2), "#221f33", x, -.6, z); for (let k = 0; k < 10; k++) put(world, plane(.8, 1.1), mat("#ffd28f", { basic: true, transparent: true, opacity: .6 }), x - w / 2 + 1 + (k * 1.7) % (w - 2), 1 + Math.floor(k / 4) * 2.4, z + 4.52, { center: true, shadow: false }); });
+
+  /* ---------- room furnishings */
+  const R = rooms;
+  { /* Jetstream: mission control */
+    const g = R.jetstream.g;
+    R.jetstream.screens.push(decal(g, skyTex, 3.4, 2.6, 7.6, 3.7, .17));
+    put(g, rbox(3.6, .16, .2, .04), "#3a4a66", 7.6, 2.3, .26); put(g, rbox(.12, 2.8, .12, .03), "#3a4a66", 7.6, 2.38, .22);
+    R.jetstream.boardTex = tex(256, 140, () => {});
+    R.jetstream.screens.push(decal(g, R.jetstream.boardTex, 3.6, 2.0, 3.4, 4.2, .17));
+    R.jetstream.countTex = tex(256, 64, () => {});
+    R.jetstream.screens.push(decal(g, R.jetstream.countTex, 2.4, .6, 3.4, 2.75, .17));
+    const rk = new T.Group(); rk.position.set(1.35, 0, 1.4); g.add(rk);
+    put(rk, cyl(.75, .85, .25, 18), "#7d8597", 0, 0, 0);
+    const rocket = new T.Group(); rocket.position.y = .25; rk.add(rocket);
+    put(rocket, capsule(.42, 1.7), mat("#f4f1ec", { rough: .4 }), 0, 0, 0);
+    put(rocket, geo("nose", () => new T.ConeGeometry(.42, .7, 18)), mat("#e2483d", { rough: .4 }), 0, 2.2, 0);
+    const wnd = mesh(cyl(.16, .16, .06, 14), mat("#7fc4e6", { emissive: 0x2a5a7a })); wnd.rotation.x = Math.PI / 2; wnd.position.set(0, 1.55, .4); rocket.add(wnd);
+    [0, 1, 2].forEach((k) => { const f = mesh(rbox(.08, .7, .5, .03), "#e2483d"); const a = k * Math.PI * 2 / 3 + .5; f.position.set(Math.sin(a) * .45, .35, Math.cos(a) * .45); f.rotation.y = a; rocket.add(f); });
+    const flame = mesh(geo("flame", () => new T.ConeGeometry(.3, .9, 12)), mat("#ffb347", { basic: true, transparent: true, opacity: .9 }), false); flame.rotation.x = Math.PI; flame.position.y = -.35; flame.visible = false; rocket.add(flame);
+    R.jetstream.rocket = rocket; R.jetstream.flame = flame;
+    R.jetstream.desks = [3.4, 5.6, 7.8].map((x) => desk(g, x, 4.3, { top: "#c6d0e0", body: "#56627c" }));
+    plant(g, 9.2, 8.6, .8);
+  }
+  { /* Pace: operations hub */
+    const g = R.pace.g, r = R.pace;
+    r.monitors = [];
+    ["jetstream", "secondbrain", "upwork", "bnolan", "kw", "cafe"].forEach((oid, k) => {
+      const x = 1.4 + (k % 3) * 1.45, y = 4.6 - Math.floor(k / 3) * 1.0;
+      put(g, rbox(1.35, .9, .1, .04), "#1d2030", x, y - .45, .22);
+      const sc = decal(g, tex(96, 64, (c) => { c.fillStyle = "#0f1424"; c.fillRect(0, 0, 96, 64); }), 1.2, .76, x, y, .28);
+      r.monitors.push({ id: oid, sc }); r.screens.push(sc);
+    });
+    put(g, rbox(3.4, 2.1, .08, .04), "#b9b2a6", 7.6, 3.25, .2);
+    decal(g, tex(256, 150, (c, w, h) => {
+      c.fillStyle = "#f6f3ee"; c.fillRect(0, 0, w, h); c.strokeStyle = "#d4cec4"; c.lineWidth = 2; [85, 170].forEach((x) => { c.beginPath(); c.moveTo(x, 8); c.lineTo(x, h - 8); c.stroke(); });
+      const cols = ["#f4b740", "#7fc4e6", "#ff8fb5", "#9de08f"];
+      for (let k = 0; k < 11; k++) { c.fillStyle = cols[k % 4]; c.fillRect(14 + (k % 3) * 85, 14 + Math.floor(k / 3) * 32, 50 + (k % 2) * 10, 24); }
+    }), 3.2, 1.9, 7.6, 4.3, .26, "back", false);
+    r.screens.push(decal(g, tex(512, 80, (c, w, h) => { c.fillStyle = "#211d36"; c.fillRect(0, 0, w, h); c.strokeStyle = "rgba(255,255,255,.12)"; for (let k = 0; k < 16; k++) { c.beginPath(); c.moveTo(k * 32, 0); c.lineTo(k * 32, h); c.stroke(); } [[20, 120, "#f08a3e"], [100, 160, "#52c47d"], [240, 140, "#7aa7ff"], [330, 150, "#f4b740"], [180, 90, "#b58cf5"]].forEach(([x, w2, col], k) => { c.fillStyle = col; rrPath(c, x, 10 + (k % 3) * 22, w2, 14, 7); c.fill(); }); }), 6.4, 1.0, 5, 2.2, .17));
+    r.desks = [2.8, 5, 7.2].map((x) => desk(g, x, 4.6));
+    plant(g, .9, 8.8, .8);
+  }
+  { /* Second Brain: library */
+    const g = R.secondbrain.g;
+    const books = tex(128, 256, (c, w, h) => {
+      c.fillStyle = "#5a3b26"; c.fillRect(0, 0, w, h); const cols = ["#8a3b3b", "#3b6a8a", "#c99a3b", "#5a8a3b", "#7a55b0", "#d9cbb0", "#2f5a5a", "#c96d9a"];
+      for (let r = 0; r < 5; r++) { const y = r * 51; c.fillStyle = "#3d2717"; c.fillRect(0, y + 44, w, 7); let x = 4, k = r * 3; while (x < w - 8) { const bw = 9 + (k * 7) % 7, bh = 26 + (k * 5) % 14; c.fillStyle = cols[k % cols.length]; c.fillRect(x, y + 44 - bh, bw, bh); x += bw + 2; k++; } }
+    });
+    [1.1, 8.9].forEach((x) => { put(g, rbox(1.9, 5.0, .9, .05), "#5a3b26", x, 0, 1.0); const f = new T.Mesh(plane(1.75, 4.8), mat("#ffffff", { map: books, rough: .9 })); f.position.set(x, 2.5, 1.47); g.add(f); });
+    put(g, rbox(3.6, 2.1, .1, .04), "#6e4a2e", 5, 3.3, .22);
+    decal(g, tex(256, 150, (c, w, h) => {
+      c.fillStyle = "#c49a6c"; c.fillRect(0, 0, w, h);
+      const pts = [[30, 24], [110, 18], [190, 30], [60, 92], [140, 96], [200, 100]];
+      c.strokeStyle = "#d33"; c.lineWidth = 2; c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(x + 22, y + 4) : c.moveTo(x + 22, y + 4))); c.stroke(); c.beginPath(); c.moveTo(132, 22); c.lineTo(222, 104); c.stroke();
+      pts.forEach(([x, y]) => { c.fillStyle = "#fffaf0"; c.fillRect(x, y, 44, 30); c.fillStyle = "#c9c2b4"; c.fillRect(x + 6, y + 10, 30, 3); c.fillRect(x + 6, y + 18, 24, 3); c.fillStyle = "#d33"; c.beginPath(); c.arc(x + 22, y + 4, 4, 0, 7); c.fill(); });
+    }), 3.4, 1.9, 5, 4.35, .28, "back", false);
+    put(g, rbox(3.0, 1.7, .1, .04), "#1a1a28", 5, 1.25, .22);
+    R.secondbrain.screens.push(decal(g, tex(256, 140, (c, w, h) => {
+      c.fillStyle = "#121530"; c.fillRect(0, 0, w, h); const n = [[40, 40], [128, 70], [210, 34], [90, 116], [200, 112], [60, 90]];
+      c.strokeStyle = "rgba(127,231,255,.6)"; c.lineWidth = 2; [[0, 1], [1, 2], [1, 3], [1, 4], [2, 4], [0, 5], [5, 3]].forEach(([a, b]) => { c.beginPath(); c.moveTo(...n[a]); c.lineTo(...n[b]); c.stroke(); });
+      n.forEach(([x, y], k) => { c.fillStyle = "rgba(127,231,255,.25)"; c.beginPath(); c.arc(x, y, 14, 0, 7); c.fill(); c.fillStyle = k === 1 ? "#ffffff" : "#bff4ff"; c.beginPath(); c.arc(x, y, k === 1 ? 9 : 6, 0, 7); c.fill(); });
+    }), 2.8, 1.5, 5, 2.1, .28));
+    const rug = mesh(cyl(2.6, 2.6, .03, 40), mat("#6b4a8a", { rough: 1 }), false); rug.position.set(5, .02, 6.4); g.add(rug);
+    const rug2 = mesh(cyl(2.0, 2.0, .035, 40), mat("#8a66b0", { rough: 1 }), false); rug2.position.set(5, .03, 6.4); g.add(rug2);
+    put(g, cyl(.04, .04, 2.2, 8), "#3a2a20", 9.1, 0, 7.6); put(g, geo("shade", () => new T.ConeGeometry(.4, .4, 16, 1, true)), mat("#f2d29a", { side: T.DoubleSide }), 9.1, 2.0, 7.6);
+    R.secondbrain.bulb = put(g, sphere(.14, 10, 8), mat("#fff2c8", { basic: true, fresh: true }), 9.1, 1.98, 7.6, { shadow: false });
+    R.secondbrain.desks = [3.4, 5, 6.6].map((x) => desk(g, x, 4.6, { w: 1.5, top: "#a8774a", body: "#6e4a2e" }));
+  }
+  { /* Upwork / Fiverr: hiring hall */
+    const g = R.upwork.g;
+    put(g, rbox(3.6, 2.2, .1, .04), "#7a5a3a", 5, 3.2, .22);
+    decal(g, tex(256, 156, (c, w, h) => {
+      c.fillStyle = "#c49a6c"; c.fillRect(0, 0, w, h); const cols = ["#d1516f", "#5367c9", "#3c9a6b", "#f4b740", "#ff8fb5", "#7fc4e6"];
+      for (let k = 0; k < 10; k++) { const x = 12 + (k % 5) * 48, y = 14 + Math.floor(k / 5) * 72; c.fillStyle = "#fffaf0"; c.fillRect(x, y, 40, 56); c.fillStyle = cols[k % 6]; c.fillRect(x, y, 40, 14); c.fillStyle = "#c9c2b4"; c.fillRect(x + 6, y + 24, 28, 4); c.fillRect(x + 6, y + 34, 20, 4); }
+    }), 3.4, 2.0, 5, 4.3, .28, "back", false);
+    [1.6, 8.4].forEach((x) => { R.upwork.screens.push(decal(g, skyTex, 1.7, 2.6, x, 3.6, .17)); put(g, rbox(1.9, .14, .22, .04), "#3a4a52", x, 2.2, .26); });
+    R.upwork.desks = [[1.8, 3.6], [4.1, 3.6], [6.4, 3.6], [8.6, 3.6], [2.9, 6.3], [7.3, 6.3]].map(([x, z]) => desk(g, x, z, { w: 1.6, top: "#efe6d6", body: "#b5a690", chair: "#2b6f86" }));
+  }
+  { /* BNolan Design: studio */
+    const g = R.bnolan.g;
+    put(g, rbox(4.2, 2.6, .14, .06), "#14181e", 5, 2.4, .24);
+    R.bnolan.screens.push(decal(g, tex(256, 150, (c, w, h) => { c.fillStyle = "#f6efe2"; c.fillRect(0, 0, w, h); c.fillStyle = "#2a3a38"; c.fillRect(16, 16, 60, 8); c.fillStyle = "#c4b9a6"; c.fillRect(16, 128, 90, 6); c.fillRect(180, 128, 60, 6); }), 4.0, 2.4, 5, 3.7, .32));
+    const morph = mesh(rbox(1.1, 1.1, .05, .5), mat("#1fa58a", { emissive: 0x0b5a4a, ei: .6 }), false); morph.position.set(5, 3.7, .38); g.add(morph);
+    R.bnolan.morph = morph;
+    put(g, rbox(.5, 1.2, .08, .04), "#14181e", 5, 1.1, .28);
+    ["#1fa58a", "#f4a63c", "#e2483d", "#33504b", "#3a2f3f", "#7fc4e6"].forEach((c, k) => { const p = new T.Mesh(plane(.32, 1.6), mat(c, { rough: .8 })); p.position.set(1.0 + k * .38, 4.0, .18); g.add(p); });
+    const ez = new T.Group(); ez.position.set(8.6, 0, 2.2); ez.rotation.y = -.5; g.add(ez);
+    [[-.4, .12], [.4, -.12]].forEach(([x, rz]) => { const l = mesh(rbox(.08, 2.6, .08, .03), "#8a6640"); l.position.set(x, 1.3, 0); l.rotation.z = rz; ez.add(l); });
+    put(ez, rbox(1.4, 1.2, .06, .03), "#fbf4e8", 0, 1.25, .1);
+    const art = new T.Mesh(plane(1.25, 1.05), mat("#ffffff", { map: tex(128, 108, (c) => { c.fillStyle = "#fbf4e8"; c.fillRect(0, 0, 128, 108); c.fillStyle = "#f4a63c"; c.beginPath(); c.arc(46, 50, 26, 0, 7); c.fill(); c.fillStyle = "#1fa58a"; rrPath(c, 60, 40, 46, 46, 12); c.fill(); }) }));
+    art.position.set(0, 1.85, .14); ez.add(art);
+    plant(g, 1.0, 1.4, 1.0); plant(g, 9.1, 8.6, .8);
+    R.bnolan.desks = [3.0, 5.2, 7.4].map((x) => desk(g, x, 4.8, { top: "#efe6d6", body: "#b8ab95" }));
+  }
+  { /* K&W: HVAC shop */
+    const g = R.kw.g;
+    const duct = mesh(cyl(.34, .34, 8.6, 18), mat("#c3c9cf", { metal: .5, rough: .35 })); duct.rotation.x = Math.PI / 2; duct.position.set(.62, 2.0, 5.2); g.add(duct);
+    [2, 4.5, 7, 9].forEach((z) => { const rg = mesh(cyl(.37, .37, .08, 18), "#9aa1a8"); rg.rotation.x = Math.PI / 2; rg.position.set(.62, 2.0, z); g.add(rg); });
+    const el = mesh(cyl(.34, .34, 1.6, 18), mat("#c3c9cf", { metal: .5, rough: .35 })); el.position.set(.62, 1.2, 9.3); g.add(el);
+    decal(g, tex(256, 140, (c, w, h) => {
+      c.fillStyle = "#b98a5a"; c.fillRect(0, 0, w, h); c.fillStyle = "#7a5a3a"; for (let y = 8; y < h; y += 14) for (let x = 8; x < w; x += 14) c.fillRect(x, y, 3, 3);
+      c.fillStyle = "#3a3f45"; c.fillRect(20, 30, 60, 10); c.beginPath(); c.arc(84, 35, 12, 0, 7); c.fill(); c.fillStyle = "#e2483d"; c.fillRect(110, 20, 12, 70); c.fillStyle = "#3a3f45"; c.fillRect(100, 14, 32, 14);
+      c.fillRect(160, 20, 8, 80); c.fillStyle = "#f4b740"; c.fillRect(150, 92, 28, 14); c.strokeStyle = "#3a3f45"; c.lineWidth = 8; c.beginPath(); c.arc(214, 54, 22, 0, 7); c.stroke(); c.fillStyle = "#e2ad22"; c.fillRect(30, 90, 90, 30);
+    }), 3.2, 1.7, .17, 1.3, 2.5, "left", false);
+    decal(g, tex(256, 150, (c, w, h) => {
+      c.fillStyle = "#c49a6c"; c.fillRect(0, 0, w, h); c.fillStyle = "#fffaf0"; c.fillRect(12, 12, 104, 70); [[24, 50], [44, 34], [64, 22], [84, 14]].forEach(([x, y], k) => { c.fillStyle = k < 2 ? "#ef6a3a" : "#4aa3df"; c.fillRect(x, y + 4, 14, 64 - y); });
+      c.fillStyle = "#ffd9c9"; c.fillRect(130, 14, 110, 30); c.fillStyle = "#cfe8ff"; c.fillRect(130, 52, 110, 30);
+      c.fillStyle = "#fffaf0"; c.fillRect(12, 94, 228, 46); c.strokeStyle = "#c9c2b4"; for (let k = 1; k < 4; k++) { c.beginPath(); c.moveTo(12, 94 + k * 11.5); c.lineTo(240, 94 + k * 11.5); c.stroke(); } [70, 128, 186].forEach((x) => { c.beginPath(); c.moveTo(x, 94); c.lineTo(x, 140); c.stroke(); });
+      c.fillStyle = "#d33"; [[20, 14], [134, 16], [134, 54], [20, 96]].forEach(([x, y]) => { c.beginPath(); c.arc(x, y, 4, 0, 7); c.fill(); });
+    }), 3.4, 1.8, 9.83, 1.25, 2.6, "right", false);
+    const ac = new T.Group(); ac.position.set(1.4, 0, 1.3); g.add(ac);
+    put(ac, rbox(1.4, 1.2, 1.4, .1), "#d6dade", 0, 0, 0);
+    put(ac, cyl(.55, .55, .05, 22), "#3a3f45", 0, 1.2, 0);
+    R.kw.fan = put(ac, rbox(1.0, .03, .18, .04), "#8b9198", 0, 1.25, 0);
+    put(g, rbox(3.0, .1, 1.1, .04), "#7f868c", 5.2, .9, 1.1); put(g, rbox(2.9, .9, .9, .04), "#4f565c", 5.2, 0, 1.1);
+    const fu = new T.Group(); fu.position.set(5.6, 1.0, 1.1); g.add(fu);
+    put(fu, rbox(.9, 1.3, .8, .06), "#c7ccd2", 0, 0, 0); put(fu, rbox(.6, .3, .04, .02), "#8b9198", 0, .8, .41); put(fu, rbox(.3, .2, .04, .02), "#2a2124", 0, .35, .41);
+    put(g, rbox(.5, .35, .4, .05), "#e2483d", 4.2, 1.0, 1.1);
+    R.kw.desks = [2.6, 5, 7.4].map((x) => desk(g, x, 5.0, { top: "#9aa1a6", body: "#4f565c" }));
+  }
+  const ICING = ["#ff8fb5", "#7a4a2b", "#ffd36b", "#fff3e8", "#9de08f", "#7fc4e6"];
+  function donut(parent, x, y, z, rx, icing) {
+    const d = new T.Group(); d.position.set(x, y, z); d.rotation.x = rx;
+    d.add(mesh(geo("donut", () => new T.TorusGeometry(.17, .09, 10, 18)), "#e2a364", false));
+    const ic = mesh(geo("icing", () => new T.TorusGeometry(.17, .07, 10, 18)), icing, false); ic.position.z = .045; d.add(ic);
+    parent.add(d); return d;
+  }
+  { /* Donut Café */
+    const g = R.cafe.g;
+    put(g, rbox(13, 1.05, 1.3, .08), "#e0508a", 13, 0, 1.3);
+    put(g, rbox(13.2, .1, 1.4, .04), "#fff3e8", 13, 1.05, 1.3);
+    const glass = mesh(rbox(4.6, .85, 1.0, .06), mat("#d9f2ff", { transparent: true, opacity: .25, rough: .05 }), false); glass.position.set(9.5, 1.58, 1.3); g.add(glass);
+    for (let k = 0; k < 12; k++) donut(g, 7.7 + (k % 6) * .72, 1.3 + Math.floor(k / 6) * .33, 1.1 + Math.floor(k / 6) * .3, -1.2, ICING[k % 6]);
+    const cm = new T.Group(); cm.position.set(16.2, 1.15, 1.2); g.add(cm);
+    put(cm, rbox(1.3, 1.0, .8, .08), "#3a3540", 0, 0, 0); put(cm, rbox(1.0, .3, .1, .04), "#6b6575", 0, .6, .4);
+    put(cm, sphere(.06, 8, 6), mat("#ff4d4d", { basic: true }), .4, .85, .41, { shadow: false });
+    put(cm, cyl(.1, .09, .2, 10), "#fff8ee", -.25, .05, .3); put(cm, cyl(.1, .09, .2, 10), "#fff8ee", .2, .05, .3);
+    put(g, cyl(.35, .3, .8, 16), "#c8a07a", 18.7, 1.15, 1.2);
+    R.cafe.screens.push(decal(g, tex(256, 64, (c, w, h) => { c.fillStyle = "#2a1c26"; c.fillRect(0, 0, w, h); for (let k = 0; k < 7; k++) { const x = 20 + k * 35; c.fillStyle = "#f4b37a"; c.beginPath(); c.arc(x, 32, 13, 0, 7); c.fill(); c.fillStyle = ICING[k % 6]; c.beginPath(); c.arc(x, 31, 11, 0, 7); c.fill(); c.fillStyle = "#2a1c26"; c.beginPath(); c.arc(x, 31, 4, 0, 7); c.fill(); } }), 5.6, 1.0, 21.6, 1.75, .25, "back"));
+    for (let k = 0; k < 18; k++) put(g, sphere(.08, 8, 6), mat(["#ffd28f", "#ff8fb5", "#9de08f"][k % 3], { basic: true }), 1 + k * 1.6, 1.32, .12, { shadow: false });
+    [[.75, 3.5, -.3], [.75, 7.4, -.3], [29.25, 3.5, .3], [29.25, 7.4, .3]].forEach(([x, z, o]) => { put(g, rbox(1.0, .55, 2.6, .18), "#ff6fa3", x, 0, z); put(g, rbox(.35, 1.2, 2.6, .15), "#e8508a", x + o, 0, z); });
+    plant(g, 1.0, 9.0, 1.0); plant(g, 29.0, 9.0, 1.0); plant(g, 20.5, 5.2, .8);
+  }
+  { /* empty room for a future project */
+    const g = R.empty.g;
+    put(g, rbox(1.4, 1.0, 1.2, .05), "#a07a52", 2.2, 0, 2.6); put(g, rbox(1.1, .8, 1.0, .05), "#b58a5e", 3.4, 0, 3.4); put(g, rbox(1.0, .7, .9, .05), "#a07a52", 2.3, 1.0, 2.6);
+    const lad = new T.Group(); lad.position.set(7.4, 0, 3); lad.rotation.y = -.6; g.add(lad);
+    [-.45, .45].forEach((x) => put(lad, rbox(.1, 3.0, .1, .03), "#9aa0ad", x, 0, 0));
+    for (let k = 0; k < 5; k++) put(lad, rbox(.9, .07, .08, .02), "#9aa0ad", 0, .4 + k * .55, 0);
+    put(g, cyl(.32, .3, .55, 16), "#e8e2d6", 5.2, 0, 6.2);
+  }
+  const cafeTables = [[5, 4.4], [5, 8.1], [12.4, 6.6], [19, 8], [25, 4.6], [25, 8.2]].map(([x, z]) => {
+    const t = new T.Group(); t.position.set(x, 0, z); R.cafe.g.add(t);
+    put(t, cyl(.5, .6, .06, 18), "#3a3540", 0, 0, 0); put(t, cyl(.08, .08, .72, 8), "#3a3540", 0, .05, 0);
+    put(t, cyl(.82, .82, .08, 28), "#fff3e8", 0, .74, 0); put(t, cyl(.84, .84, .04, 28), "#d65a8c", 0, .72, 0);
+    return t;
+  });
+
+  /* ---------- per-state crews */
+  const CENTER = { jetstream: [5.6, 7.3], pace: [5, 7.4], secondbrain: [5, 7.2], upwork: [5, 8.3], bnolan: [5.2, 7.6], kw: [5, 7.7] };
+  function problem(id, parent, x, z) {
+    const g = new T.Group(); g.position.set(x, 0, z); g.userData.room = id; parent.add(g);
+    const blink = [];
+    switch (id) {
+      case "jetstream": put(g, rbox(1.4, .9, .9, .08), "#3a4a66", 0, 0, 0); blink.push(put(g, rbox(1.0, .4, .05, .03), mat("#ff4d4d", { basic: true }), 0, .95, -.1, { rx: -.5 })); break;
+      case "pace": put(g, rbox(.9, 1.6, .8, .06), "#2a2d3d", 0, 0, 0); [0, 1, 2].forEach((k) => put(g, rbox(.7, .14, .04, .02), "#11131c", 0, .35 + k * .4, .41)); blink.push(put(g, sphere(.06, 8, 6), mat("#ff4d4d", { basic: true }), .28, 1.35, .42, { shadow: false })); break;
+      case "secondbrain": [[0, 0, 0, "#8a3b3b"], [.1, .18, .3, "#3b6a8a"], [-.2, .36, -.4, "#c99a3b"], [.5, 0, 1.1, "#5a8a3b"]].forEach(([dx, y, r, c]) => put(g, rbox(.9, .16, .6, .03), c, dx, y, 0, { ry: r })); break;
+      case "kw": {
+        put(g, rbox(1.0, 1.4, .9, .06), "#c7ccd2", 0, 0, 0); put(g, rbox(.7, .35, .04, .02), "#8b9198", 0, .9, .46); put(g, rbox(.34, .26, .04, .02), "#2a2124", 0, .4, .46);
+        blink.push(put(g, sphere(.08, 8, 6), mat("#ff5a3a", { basic: true }), 0, .45, .5, { shadow: false }));
+        const puffs = [0, 1, 2].map(() => { const s = mesh(sphere(.25, 10, 8), mat("#9a9ca4", { transparent: true, opacity: .7, fresh: true }), false); g.add(s); return s; });
+        tickers.push((t) => puffs.forEach((s, k) => { const ph = (t * .5 + k / 3) % 1; s.position.set(Math.sin(k * 2 + t) * .15, 1.5 + ph * 1.4, 0); s.scale.setScalar(.6 + ph * 1.2); s.material.opacity = .7 * (1 - ph); }));
+        break;
+      }
+      case "upwork": chair(g, 0, 0, "#2b6f86"); put(g, rbox(.7, .45, .05, .03), "#2a2d3d", 0, .55, .1); blink.push(put(g, sphere(.06, 8, 6), mat("#f4b740", { basic: true }), 0, .78, .14, { shadow: false })); break;
+      case "bnolan": put(g, rbox(1.2, 1.0, .06, .03), "#fbf4e8", 0, .6, 0, { rx: -.1 }); [-.4, .4].forEach((x) => put(g, rbox(.07, 1.7, .07, .02), "#8a6640", x, 0, -.1)); [[.6, .4], [-.7, .5], [.2, .7]].forEach(([a, b]) => put(g, sphere(.13, 8, 6), "#f6efe2", a, 0, b)); break;
+    }
+    tickers.push((t) => blink.forEach((b) => (b.visible = Math.floor(t * 2.4) % 2 === 0)));
+  }
+  function holdSign(id) {
+    const g = new T.Group(), P = PROJECTS[id];
+    put(g, cyl(.04, .04, 1.5, 8), "#8a6640", 0, 0, 0);
+    const t = tex(200, 140, (c, w, h) => {
+      c.fillStyle = "#fffaf0"; rrPath(c, 0, 0, w, h, 14); c.fill(); c.strokeStyle = P.tile; c.lineWidth = 8; rrPath(c, 4, 4, w - 8, h - 8, 12); c.stroke();
+      c.save(); c.translate(26, 26); c.fillStyle = P.tile; rrPath(c, 0, 0, 88, 88, 16); c.fill(); c.translate(12, 12); drawIcon(c, id, 64, "#fff", id === "kw" ? "#ff8a3a" : shade(P.tile, -35)); c.restore();
+      c.fillStyle = "#52c47d"; c.beginPath(); c.arc(156, 70, 24, 0, 7); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 7; c.beginPath(); c.moveTo(144, 70); c.lineTo(153, 80); c.lineTo(170, 60); c.stroke();
+    });
+    const board = new T.Mesh(plane(1.5, 1.05), mat("#ffffff", { map: t, side: T.DoubleSide }));
+    board.position.set(0, 1.9, .05); board.castShadow = true; g.add(board);
+    return g;
+  }
+  const people = [];
+  tickers.push((t) => { if (R.bnolan.morph.visible) { R.bnolan.morph.rotation.z = Math.sin(t * .6) * .8; const s = 1 + Math.sin(t * 1.2) * .12; R.bnolan.morph.scale.set(s, s, 1); } });
+  tickers.push((t) => { R.kw.fan.rotation.y = t * 6; });
+  const baseTickers = tickers.length;
+  function drawJetBoards(r, st) {
+    redraw(r.boardTex, (c, w, h) => {
+      c.fillStyle = "#0f1626"; c.fillRect(0, 0, w, h);
+      for (let k = 0; k < 24; k++) { c.fillStyle = st === "parked" ? "#2a3244" : st === "blocked" && k % 5 === 2 ? "#ff4d4d" : ["#52c47d", "#52c47d", "#f4b740", "#52c47d"][k % 4]; c.beginPath(); c.arc(24 + (k % 8) * 30, 30 + Math.floor(k / 8) * 38, 10, 0, 7); c.fill(); }
+    });
+    redraw(r.countTex, (c, w, h) => { c.fillStyle = "#0f1626"; c.fillRect(0, 0, w, h); c.fillStyle = st === "blocked" ? "#ff6a5a" : st === "parked" ? "#3a3a2a" : "#ffc861"; c.font = "500 40px 'JetBrains Mono', monospace"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(st === "blocked" ? "T-00:00" : st === "shipped" ? "T+00:01" : "T-00:42", w / 2, h / 2 + 2); });
+  }
+  function buildCrews() {
+    tickers.length = baseTickers; people.length = 0;
+    for (const id of [...PROJECT_IDS, "cafe"]) { rooms[id].crew.clear(); rooms[id].extras.clear(); }
+    for (const id of PROJECT_IDS) {
+      const r = rooms[id], p = state.projects[id], st = p ? p.state : "none";
+      const lit = st !== "parked";
+      r.light.intensity = !lit ? 0 : st === "blocked" ? .6 : 1.2;
+      r.screens.forEach((s) => s.material.color.set(lit ? "#ffffff" : "#2a2a36"));
+      r.desks.forEach((d) => d.screens.forEach((s) => s.material.color.set(lit && st !== "none" ? "#ffffff" : "#2a2a36")));
+      if (r.morph) r.morph.visible = lit;
+      if (r.bulb) r.bulb.material.color.set(lit ? "#fff2c8" : "#3a3540");
+      if (r.boardTex) drawJetBoards(r, st);
+      if (r.rocket) { r.flame.visible = st === "shipped"; r.rocket.position.y = .25; }
+      const [cx, cz] = CENTER[id];
+      if (st === "active") {
+        const n = id === "upwork" ? Math.max(1, Math.min(6, Number(p.seats) || 3)) : 3;
+        r.desks.slice(0, n).forEach((d, i) => { const pp = person(id, i, "sit"); seat(pp, d.x, d.z); r.crew.add(pp.g); people.push(pp); });
+      } else if (st === "blocked") {
+        problem(id, r.extras, cx, cz);
+        const spots = [[cx - 1.5, cz + .6, "hips"], [cx + 1.5, cz + .5, "scratch"], [cx + .1, cz - 1.3, "hips"]];
+        spots.forEach(([x, z, pose], i) => { const pp = person(id, i, pose); stand(pp, x, z, Math.atan2(cx - x, cz - z)); r.crew.add(pp.g); people.push(pp); });
+        spots.forEach(([x, z], i) => { const b = sprite(i === 2 ? exTex : qTex, .75); b.position.set(x, 3.1, z); r.extras.add(b); tickers.push((t) => (b.position.y = 3.1 + Math.sin(t * 3 + i) * .08)); });
+        const beacon = put(r.extras, geo("beacon", () => new T.SphereGeometry(.26, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2)), mat("#ff3b30", { basic: true, fresh: true }), r.w * 5, r.row ? 1.34 : H_BACK + .14, r.row ? 0 : .1, { shadow: false });
+        const rl = new T.PointLight(0xff3b30, 1.2, 12, 1.5); rl.position.set(r.w * 5, 4, 3); r.extras.add(rl);
+        tickers.push((t) => { const v = (Math.sin(t * 5) + 1) / 2; rl.intensity = .4 + v * 1.6; beacon.material.color.setRGB(1, .2 + v * .2, .15); });
+      } else if (st === "review") {
+        const a = person(id, 0, "point"); stand(a, cx - 1.6, cz + .3, .35);
+        const b = person(id, 1, "hold"); stand(b, cx, cz, 0); const sg = holdSign(id); sg.position.set(.62, 1.9, .1); b.g.add(sg);
+        const c = person(id, 2, "stand"); stand(c, cx + 1.6, cz + .3, -.35); c.pose = "point"; c.pointArm = 0; c.arms[0].rotation.set(-1.5, 0, -.5);
+        [a, b, c].forEach((pp) => { r.crew.add(pp.g); people.push(pp); });
+        [[-1.4, 3.4], [1.5, 3.1], [.3, 4.2]].forEach(([dx, y], k) => { const s = sprite(sparkTex, .5); s.position.set(cx + dx, y, cz); r.extras.add(s); tickers.push((t) => s.scale.setScalar(.3 + Math.abs(Math.sin(t * 2.5 + k)) * .35)); });
+      } else if (st === "shipped") {
+        [-1.6, 0, 1.6].forEach((dx, i) => { const pp = person(id, i, "cheer"); stand(pp, cx + dx, cz, 0); r.crew.add(pp.g); people.push(pp); });
+        const cc = ["#f05a4b", "#f4b740", "#52c47d", "#7aa7ff", "#ff8fb5", "#b58cf5"];
+        const bits = Array.from({ length: 46 }, (_, k) => { const m = mesh(plane(.14, .24), mat(cc[k % 6], { basic: true, side: T.DoubleSide }), false); r.extras.add(m); return { m, x: 1 + ((k * 37) % 80) / 10, z: 2 + ((k * 53) % 70) / 10, sp: .8 + (k % 5) * .15, ph: k * .7 }; });
+        tickers.push((t) => bits.forEach((b) => { const y = 6 - ((t * b.sp + b.ph) % 6); b.m.position.set(b.x + Math.sin(t * 2 + b.ph) * .3, y, b.z); b.m.rotation.set(t * 3 + b.ph, t * 2, 0); }));
+        if (r.rocket) tickers.push((t) => (r.rocket.position.y = .25 + Math.abs(Math.sin(t * .8)) * .4));
+      }
+    }
+    /* café: one table per parked crew */
+    const parked = parkedIds();
+    cafeTables.forEach((t, k) => {
+      const id = parked[k]; if (!id) return;
+      [Math.PI, 1.25, -1.25].forEach((a, i) => {
+        const x = t.position.x + Math.sin(a) * 1.25, z = t.position.z + Math.cos(a) * 1.25;
+        const ch = chair(R.cafe.extras, x, z, "#ff8a43", a + Math.PI); ch.userData.room = id;
+        const pp = person(id, i, "cafe"); seat(pp, x, z, a + Math.PI); R.cafe.crew.add(pp.g); people.push(pp);
+      });
+      const tb = new T.Group(); tb.position.copy(t.position); tb.userData.room = id; R.cafe.extras.add(tb);
+      donut(tb, -.3, .88, .2, -Math.PI / 2, "#7a4a2b"); donut(tb, .35, .88, -.1, -Math.PI / 2, "#ff8fb5");
+      put(tb, cyl(.25, .25, .02, 16), "#ffffff", -.3, .8, .2);
+    });
+  }
+  function paintMonitors() {
+    const lit = !(state.projects.pace && state.projects.pace.state === "parked");
+    rooms.pace.monitors.forEach(({ id, sc }) => {
+      redraw(sc.material.map, (c, w, h) => {
+        c.fillStyle = "#0f1424"; c.fillRect(0, 0, w, h); if (!lit) return;
+        if (id === "cafe") { c.fillStyle = "#ff8a4a"; c.fillRect(4, 4, w - 8, h - 8); c.fillStyle = "#fff3e8"; c.beginPath(); c.arc(w / 2, h / 2, 18, 0, 7); c.fill(); c.fillStyle = "#ff8a4a"; c.beginPath(); c.arc(w / 2, h / 2, 7, 0, 7); c.fill(); return; }
+        const p = state.projects[id]; c.fillStyle = p ? STATE_COLOR[p.state] : "#2b3045"; c.fillRect(4, 4, w - 8, h - 8);
+        c.save(); c.translate(w / 2 - 18, h / 2 - 18); drawIcon(c, id, 36, "#ffffff", "#ffffff"); c.restore();
+      });
+    });
+  }
+
+  /* ---------- camera */
+  const BOUNDS = [];
+  for (const x of [-2, 52]) for (const y of [-.6, 9.2]) for (const z of [-1, 22]) BOUNDS.push(new T.Vector3(x, y, z));
+  let W = 1, Hh = 1;
+  function placeCamera() {
+    const d = 160;
+    camera.position.set(target.x + d * Math.sin(view.yaw) * Math.cos(view.pitch), target.y + d * Math.sin(view.pitch), target.z + d * Math.cos(view.yaw) * Math.cos(view.pitch));
+    camera.lookAt(target); camera.updateMatrixWorld();
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    BOUNDS.forEach((v) => { const p = v.clone().applyMatrix4(camera.matrixWorldInverse); x0 = Math.min(x0, p.x); x1 = Math.max(x1, p.x); y0 = Math.min(y0, p.y); y1 = Math.max(y1, p.y); });
+    const aspect = W / Hh, bw = x1 - x0, bh = y1 - y0, cxv = (x0 + x1) / 2, cyv = (y0 + y1) / 2;
+    let hw, hh;
+    if (bw / bh > aspect) { hw = bw / 2 * 1.02; hh = hw / aspect; } else { hh = bh / 2 * 1.02; hw = hh * aspect; }
+    Object.assign(camera, { left: cxv - hw, right: cxv + hw, top: cyv + hh, bottom: cyv - hh });
+    camera.updateProjectionMatrix();
+  }
+  function resize() {
+    W = Math.max(1, stage.clientWidth); Hh = Math.round(W * (W < 700 ? .66 : .58));
+    renderer.setSize(W, Hh, false); canvas.style.height = Hh + "px"; placeCamera();
+  }
+  new ResizeObserver(resize).observe(stage); resize();
+
+  /* ---------- signboards (HTML, pinned to 3D points) */
+  const ANCHORS = { jetstream: [5, 6.75, .2], pace: [15, 6.75, .2], secondbrain: [25, 6.75, .2], upwork: [35, 6.75, .2], bnolan: [45, 6.75, .2], kw: [5, 1.1, 20.4], cafe: [25, 1.1, 20.4] };
+  const BELOW = { kw: true, cafe: true };
+  const signs = {};
+  Object.keys(ANCHORS).forEach((id) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "sign" + (id === "cafe" ? " cafe" : "");
+    if (id !== "cafe") b.dataset.open = id;
+    labelsEl.appendChild(b); signs[id] = { el: b, v: new T.Vector3(...ANCHORS[id]), below: !!BELOW[id] };
+  });
+  function fillSigns() {
+    Object.entries(signs).forEach(([id, s]) => {
+      if (id === "cafe") {
+        const n = parkedIds().length;
+        s.el.innerHTML = `<img src="${ICON_URL.cafe}" alt=""><span class="t"><span class="n">Donut Café</span><span class="s"><b>${n ? "Parked:" : "Open:"}</b> ${n ? n + (n > 1 ? " crews" : " crew") + " on break" : "no crews on break"}</span></span><span></span>`;
+        s.el.style.setProperty("--chip", "#ff6fa3"); return;
+      }
+      const p = state.projects[id];
+      const st = p ? `<b class="${esc(p.state)}">${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "")}` : state.unavailable ? "Status unavailable" : "Checking in…";
+      s.el.innerHTML = `<img src="${ICON_URL[id]}" alt=""><span class="t"><span class="n">${esc(nameOf(id))}</span><span class="s">${st}</span></span><span class="lk">${ICON_TERM}</span>`;
+      s.el.setAttribute("aria-label", `${nameOf(id)}${p ? ", " + STATE_LABEL[p.state] : ""}. Open details and terminal.`);
+      s.el.style.setProperty("--chip", p ? STATE_COLOR[p.state] : "#8e93a8");
+    });
+  }
+  function placeSigns() {
+    Object.values(signs).forEach((s) => {
+      const p = s.v.clone().project(camera);
+      s.el.style.transform = `translate(${((p.x + 1) / 2 * W).toFixed(1)}px, ${((1 - p.y) / 2 * Hh).toFixed(1)}px) translate(-50%, ${s.below ? "12%" : "-100%"})`;
+    });
+  }
+
+  /* ---------- interaction: drag to turn, tap a room to open it */
+  const ray = new T.Raycaster(), ptr = new T.Vector2();
+  let drag = null;
+  canvas.addEventListener("pointerdown", (e) => { drag = { x: e.clientX, yaw: view.yaw, moved: false, mouse: e.pointerType !== "touch" }; });
+  window.addEventListener("pointermove", (e) => {
+    if (!drag || !drag.mouse) return;
+    const dx = e.clientX - drag.x; if (Math.abs(dx) > 4) drag.moved = true;
+    if (drag.moved) { canvas.classList.add("dragging"); view.yaw = Math.max(-.85, Math.min(.35, drag.yaw - dx * .004)); placeCamera(); }
+  });
+  window.addEventListener("pointerup", (e) => {
+    if (!drag) return; const d = drag; drag = null; canvas.classList.remove("dragging");
+    if (d.moved || e.target !== canvas) return;
+    const rc = canvas.getBoundingClientRect(); ptr.set((e.clientX - rc.left) / rc.width * 2 - 1, -(e.clientY - rc.top) / rc.height * 2 + 1);
+    ray.setFromCamera(ptr, camera);
+    const hit = ray.intersectObjects(world.children, true).find((h) => h.object.type !== "Sprite");
+    let o = hit && hit.object; while (o && !(o.userData && o.userData.room)) o = o.parent;
+    const id = o && o.userData.room;
+    if (id && PROJECTS[id]) openPanel(id);
+  });
+
+  /* ---------- loop */
+  const clock = new T.Clock();
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let last = 0;
+  function frame(now) {
+    requestAnimationFrame(frame);
+    if (document.hidden) return;
+    if (reduce && now - last < 400) return;
+    last = now;
+    const t = reduce ? 0 : clock.getElapsedTime();
+    people.forEach((p) => animatePerson(p, t));
+    tickers.forEach((f) => f(t));
+    renderer.render(scene, camera);
+    placeSigns();
+  }
+  requestAnimationFrame(frame);
+
+  return { update() { buildCrews(); paintMonitors(); fillSigns(); } };
 }
 
+/* ============================================================ page: placards, legend, panel */
+const placardsEl = document.getElementById("placards");
+function placardHTML(id) {
+  const p = state.projects[id];
+  const chip = p ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : `<span class="chip none">—</span>`;
+  const step = p ? `<b>${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "No current step saved.")}` : state.unavailable ? "Status can't load in this view." : state.loaded ? "No status saved yet." : "Checking in…";
+  const open = p && p.sessionUrl ? `<a class="btn" href="${esc(p.sessionUrl)}" target="_blank" rel="noopener">${ICON_EXT}Open workspace</a>` : "";
+  return `<article class="placard"><div class="pl-head"><img src="${ICON_URL[id]}" alt=""><span class="pl-name">${esc(nameOf(id))}</span>${chip}</div>
+    <p class="pl-step">${step}</p><div class="pl-actions">${open}<button class="btn ghost" type="button" data-open="${id}">${ICON_TERM}Terminal</button></div></article>`;
+}
 function render() {
-  const ctx = { projects: state.projects };
-  building.querySelectorAll(".room").forEach((n) => n.remove());
-  ROOMS.forEach((r) => {
-    const el = document.createElement("section");
-    el.className = "room " + (r.pos === "annex" ? "annex" : r.pos);
-    if (r.id === "empty") {
-      el.innerHTML = `<div class="scene" style="cursor:default">${emptySVG()}</div><div class="placard" style="visibility:hidden" aria-hidden="true"></div>`;
-    } else if (r.id === "cafe") {
-      el.innerHTML = `<div class="scene" style="cursor:default">${cafeSVG(ctx)}</div>${placardHTML("cafe")}`;
-    } else {
-      el.innerHTML = `<div class="scene" tabindex="0" role="button" data-open="${r.id}" aria-label="Open ${esc((state.projects[r.id] || {}).name || r.label)}">${roomSVG(r.id, ctx)}</div>${placardHTML(r.id)}`;
-    }
-    building.appendChild(el);
-  });
-  // legend
+  const parked = parkedIds();
+  placardsEl.innerHTML = PROJECT_IDS.map(placardHTML).join("") +
+    `<article class="placard"><div class="pl-head"><img src="${ICON_URL.cafe}" alt=""><span class="pl-name">Donut Café</span><span class="chip">${parked.length} parked</span></div>
+     <p class="pl-step">${parked.length ? "On break here:" : state.loaded ? "No crews on break." : "Checking who's on break…"}</p>
+     <div class="who">${parked.map((k) => `<span>${esc(nameOf(k))}</span>`).join("")}</div></article>`;
   const counts = {};
   PROJECT_IDS.forEach((id) => { const p = state.projects[id]; if (p) counts[p.state] = (counts[p.state] || 0) + 1; });
   document.getElementById("legend").innerHTML = STATES.map((k) => `<span class="lg"><span class="dot ${k}"></span>${STATE_LABEL[k]} <b>${counts[k] || 0}</b></span>`).join("");
@@ -764,19 +886,16 @@ function render() {
     const d = new Date(dates[dates.length - 1] + "T12:00:00");
     document.getElementById("asof").textContent = `Your Claude Code projects, one room each. Last update ${d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}. Tap a room for its terminal.`;
   }
+  if (three) { try { three.update(); } catch (e) { console.error(e); } }
   if (state.openId) renderPanel(state.openId);
 }
 
-/* ---------- side panel ---------- */
 const panel = document.getElementById("panel"), backdrop = document.getElementById("backdrop");
 let draftState = null;
-function openPanel(id) { state.openId = id; draftState = null; renderPanel(id); panel.hidden = false; backdrop.hidden = false; panel.querySelector(".x").focus(); }
+function openPanel(id) { if (!PROJECTS[id]) return; state.openId = id; draftState = null; renderPanel(id); panel.hidden = false; backdrop.hidden = false; panel.querySelector(".x").focus(); }
 function closePanel() { state.openId = null; panel.hidden = true; backdrop.hidden = true; }
 function renderPanel(id) {
   const p = state.projects[id] || {};
-  const room = ROOMS.find((r) => r.id === id);
-  const name = p.name || room.label;
-  const cmd = p.command || "claude";
   const st = draftState || p.state;
   const links = [];
   if (p.sessionUrl) links.push({ label: "Open the workspace in Claude Code", url: p.sessionUrl });
@@ -784,15 +903,10 @@ function renderPanel(id) {
   const editable = state.db && state.canWrite !== false;
   const focusId = document.activeElement && document.activeElement.id;
   panel.innerHTML = `
-    <div class="row"><h2 id="panel-title">${esc(name)}</h2><button class="x" type="button" aria-label="Close">×</button></div>
-    <div>${p.state ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : ""}
-      <p style="margin-top:10px">${esc(p.step || "No current step saved.")}</p></div>
-    <div>
-      <h3>Terminal</h3>
-      <div class="term"><code id="cmd">${esc(cmd)}</code>
-        <div class="row"><small>${esc(p.commandNote || "Paste into Terminal on your Mac to pick this project up there.")}</small><button class="btn" type="button" id="copy">Copy</button></div>
-      </div>
-    </div>
+    <div class="row"><h2 id="panel-title">${esc(nameOf(id))}</h2><button class="x" type="button" aria-label="Close">×</button></div>
+    <div>${p.state ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : ""}<p style="margin-top:10px">${esc(p.step || "No current step saved.")}</p></div>
+    <div><h3>Terminal</h3><div class="term"><code id="cmd">${esc(p.command || "claude")}</code>
+      <div class="row"><small>${esc(p.commandNote || "Paste into Terminal on your Mac to pick this project up there.")}</small><button class="btn" type="button" id="copy">Copy</button></div></div></div>
     ${links.length ? `<div><h3>Links</h3><div class="links">${links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div></div>` : ""}
     ${p.updatedAt ? `<p style="font-size:12.5px;color:var(--ink-mute)">Updated ${esc(p.updatedAt)}</p>` : ""}
     ${editable ? `<form class="edit" id="edit">
@@ -808,28 +922,24 @@ function renderPanel(id) {
 panel.addEventListener("click", async (e) => {
   if (e.target.closest(".x")) return closePanel();
   if (e.target.closest("#copy")) {
-    const text = document.getElementById("cmd").textContent;
-    try { await navigator.clipboard.writeText(text); toast("Copied. Paste it into Terminal."); }
-    catch { const r = document.createRange(); r.selectNodeContents(document.getElementById("cmd")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Selected. Press ⌘C to copy."); }
+    const el = document.getElementById("cmd");
+    try { await navigator.clipboard.writeText(el.textContent); toast("Copied. Paste it into Terminal."); }
+    catch { const r = document.createRange(); r.selectNodeContents(el); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Selected. Press ⌘C to copy."); }
     return;
   }
   const sb = e.target.closest("[data-state]");
-  if (sb) {
-    draftState = sb.dataset.state;
-    panel.querySelectorAll(".states button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.state === draftState));
-  }
+  if (sb) { draftState = sb.dataset.state; panel.querySelectorAll(".states button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.state === draftState)); }
 });
 panel.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const id = state.openId, p = state.projects[id] || {};
-  const msg = document.getElementById("msg");
+  const id = state.openId, p = state.projects[id] || {}, msg = document.getElementById("msg");
   const next = JSON.parse(JSON.stringify(p));
   next.state = draftState || p.state || "active";
   next.step = document.getElementById("f-step").value.trim();
   next.sessionUrl = document.getElementById("f-url").value.trim();
   next.command = document.getElementById("f-cmd").value.trim();
   next.updatedAt = new Date().toISOString().slice(0, 10);
-  if (!next.name) next.name = ROOMS.find((r) => r.id === id).label;
+  if (!next.name) next.name = PROJECTS[id].label;
   msg.textContent = "Saving…";
   try { await state.db.doc("projects/" + id).set(next); draftState = null; toast(`${next.name} saved.`); }
   catch (err) {
@@ -838,17 +948,12 @@ panel.addEventListener("submit", async (e) => {
   }
 });
 backdrop.addEventListener("click", closePanel);
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !panel.hidden) closePanel();
-  const t = e.target.closest && e.target.closest(".scene[data-open]");
-  if (t && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openPanel(t.dataset.open); }
-});
-building.addEventListener("click", (e) => { const t = e.target.closest("[data-open]"); if (t) openPanel(t.dataset.open); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) closePanel(); });
+document.addEventListener("click", (e) => { const t = e.target.closest("[data-open]"); if (t && t.dataset.open && !panel.contains(t)) openPanel(t.dataset.open); });
 
 let toastTimer;
 function toast(text) { const t = document.getElementById("toast"); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600); }
 
-/* ---------- data ---------- */
 async function connect() {
   if (!window.claude || !window.claude.use) { state.unavailable = true; render(); return; }
   const db = await window.claude.use("db");
