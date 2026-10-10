@@ -1146,16 +1146,26 @@ function readSessions(payload) {
   const list = (pl.ccr && pl.ccr.data) || pl.data || pl.sessions || (Array.isArray(pl) ? pl : null);
   return Array.isArray(list) ? list : null;
 }
+/* Code sessions and Cowork sessions are listed separately; merge both feeds by session id */
+const feeds = { code: [], cowork: [] };
+let unwatchCowork = null;
+function mergedSessions() { const by = new Map(); [...feeds.code, ...feeds.cowork].forEach((sn) => sn && sn.id && by.set(sn.id, sn)); return [...by.values()]; }
 async function startLive() {
   if (!window.claude || !window.claude.use) { live.status = "off"; render(); return; }
   const mcp = await window.claude.use("mcp");
   if (!mcp) { live.status = "off"; render(); return; }
   if (unwatch) unwatch();
+  if (unwatchCowork) unwatchCowork();
+  unwatchCowork = mcp.watchTool(LIVE_SERVER, "list_sessions", { limit: 50, tags: ["cowork-local", "cowork-remote"] }, (ev) => {
+    if (ev.type !== "data") return; /* Cowork listing is a bonus; the Code feed owns the status bar */
+    const list = readSessions(ev.result.payload); if (!list) return;
+    feeds.cowork = list; if (live.status === "on") { computeLive(mergedSessions()); render(); }
+  }, { refetchInterval: 30000, cache: { staleTime: 15000 } });
   unwatch = mcp.watchTool(LIVE_SERVER, "list_sessions", { limit: 50, mine: true }, (ev) => {
     if (ev.type === "data") {
       const list = readSessions(ev.result.payload);
       if (!list) { live.status = "stale"; render(); return; }
-      computeLive(list); live.status = "on"; live.at = (ev.result.cache && ev.result.cache.storedAt) || Date.now(); render();
+      feeds.code = list; computeLive(mergedSessions()); live.status = "on"; live.at = (ev.result.cache && ev.result.cache.storedAt) || Date.now(); render();
     } else {
       const c = ev.error && ev.error.code;
       if (DENIED.includes(c)) { live.byProject = {}; live.status = c === "needs_reauth" ? "reauth" : c === "not_in_manifest" || c === "consent_required" ? "declined" : "off"; }
