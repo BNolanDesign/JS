@@ -267,7 +267,9 @@ const ICON_EXT = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" str
 const ICON_TERM = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg>`;
 /* ---- live work: read your Claude Code sessions and match them to rooms ---- */
 const LIVE_SERVER = "Claude Code Remote";
-const BUCKET = { WORKING: "SESSION_STATUS_BUCKET_WORKING", BLOCKED: "SESSION_STATUS_BUCKET_BLOCKED", FAILED: "SESSION_STATUS_BUCKET_FAILED" };
+const BUCKET = { WORKING: "SESSION_STATUS_BUCKET_WORKING", BLOCKED: "SESSION_STATUS_BUCKET_BLOCKED", FAILED: "SESSION_STATUS_BUCKET_FAILED", REVIEW: "SESSION_STATUS_BUCKET_REVIEW_READY" };
+/* a session that answered within this window and is waiting on you still counts as being worked on */
+const RECENT_MS = 20 * 60 * 1000;
 /* how a session is tied to a room: its title words, its repo, a tag, or its id. Overridable per room with a saved "match" field. */
 const DEFAULT_MATCH = {
   jetstream: { keywords: ["jetstream"], ids: ["session_01YRg7c8DJLTu3yqc9yD7Fva", "session_0185S13zUE98aRRsNJ4xTwC4", "session_01DbEajHnxUwM1Rk7U8BeayU"] },
@@ -304,14 +306,19 @@ function computeLive(sessions) {
   const by = {};
   PROJECT_IDS.forEach((id) => {
     const list = sessions.filter((sn) => sn && sn.id && sessionMatches(sn, id)).sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
-    by[id] = { list, working: list.filter((sn) => sn.status_bucket === BUCKET.WORKING), waiting: list.filter((sn) => sn.status_bucket === BUCKET.BLOCKED) };
+    const now = Date.now();
+    const recent = list.filter((sn) => sn.status_bucket !== BUCKET.WORKING && sn.session_status !== "SESSION_STATUS_ARCHIVED" && now - Date.parse(sn.updated_at) < RECENT_MS);
+    by[id] = { list, working: list.filter((sn) => sn.status_bucket === BUCKET.WORKING), recent, waiting: list.filter((sn) => sn.status_bucket === BUCKET.BLOCKED) };
   });
   live.byProject = by;
 }
 /* what a room shows: its saved status, unless one of its sessions is working right now */
 function viewOf(id) {
   const p = state.projects[id], L = live.byProject[id];
-  if (L && L.working.length) return Object.assign({}, p || { name: PROJECTS[id].label }, { state: "active", live: true, liveSession: L.working[0], saved: p || null });
+  if (L && (L.working.length || L.recent.length)) {
+    const working = L.working.length > 0;
+    return Object.assign({}, p || { name: PROJECTS[id].label }, { state: "active", live: true, liveKind: working ? "working" : "turn", liveSession: working ? L.working[0] : L.recent[0], saved: p || null });
+  }
   return p ? Object.assign({}, p, { saved: p }) : null;
 }
 function ago(iso) {
@@ -934,7 +941,7 @@ function buildWorld() {
         s.el.style.setProperty("--chip", "#ff6fa3"); return;
       }
       const p = viewOf(id);
-      const st = p && p.live ? `<b class="live">Working now:</b> ${esc(p.liveSession.title || "Claude is working")}`
+      const st = p && p.live ? `<b class="live">${p.liveKind === "turn" ? "Your turn:" : "Working now:"}</b> ${esc(p.liveSession.title || "Claude is working")}`
         : p ? `<b class="${esc(p.state)}">${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "")}` : state.unavailable ? "Status unavailable" : "Checking in…";
       s.el.classList.toggle("live", !!(p && p.live));
       s.el.innerHTML = `<img src="${ICON_URL[id]}" alt=""><span class="t"><span class="n">${esc(nameOf(id))}</span><span class="s">${st}</span></span><span class="lk">${ICON_TERM}</span>`;
@@ -999,8 +1006,8 @@ function buildWorld() {
 const placardsEl = document.getElementById("placards");
 function placardHTML(id) {
   const p = viewOf(id);
-  const chip = p && p.live ? `<span class="chip live">Working now</span>` : p ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : `<span class="chip none">—</span>`;
-  const step = p && p.live ? `<b>Working now:</b> ${esc(p.liveSession.title || "Claude is working")}${p.saved && p.saved.step ? `<br><span style="color:var(--ink-mute)">Last saved step: ${esc(p.saved.step)}</span>` : ""}`
+  const chip = p && p.live ? `<span class="chip live">${p.liveKind === "turn" ? "In session" : "Working now"}</span>` : p ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : `<span class="chip none">—</span>`;
+  const step = p && p.live ? `<b>${p.liveKind === "turn" ? "In session, your turn:" : "Working now:"}</b> ${esc(p.liveSession.title || "Claude is working")}${p.saved && p.saved.step ? `<br><span style="color:var(--ink-mute)">Last saved step: ${esc(p.saved.step)}</span>` : ""}`
     : p ? `<b>${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "No current step saved.")}` : state.unavailable ? "Status can't load in this view." : state.loaded ? "No status saved yet." : "Checking in…";
   const openUrl = p && p.live ? "https://claude.ai/code/" + p.liveSession.id : p && p.sessionUrl;
   const open = openUrl ? `<a class="btn" href="${esc(openUrl)}" target="_blank" rel="noopener">${ICON_EXT}Open workspace</a>` : "";
@@ -1031,7 +1038,7 @@ function renderLiveBar() {
   bar.className = "livebar" + (live.status === "on" ? " on" : live.status === "stale" || live.status === "off" ? " warn" : "");
   if (live.status === "on" || live.status === "stale") {
     const names = working.map(nameOf).join(", ");
-    txt.innerHTML = `${live.status === "on" ? "<b>Live</b>" : "<b>Reconnecting…</b> showing the last check"} · checked ${esc(ago(live.at))} · ${working.length ? `<b>${working.length}</b> working now: ${esc(names)}` : "no project is working right now"}`;
+    txt.innerHTML = `${live.status === "on" ? "<b>Live</b>" : "<b>Reconnecting…</b> showing the last check"} · checked ${esc(ago(live.at))} · ${working.length ? `<b>${working.length}</b> in progress: ${esc(names)}` : "no project is in progress right now"}`;
   } else if (live.status === "declined") {
     txt.innerHTML = `Live updates are off. <button type="button" id="liveon">Turn on live updates</button>`;
   } else if (live.status === "reauth") {
@@ -1049,7 +1056,7 @@ const panel = document.getElementById("panel"), backdrop = document.getElementBy
 let draftState = null;
 function openPanel(id) { if (!PROJECTS[id]) return; state.openId = id; draftState = null; renderPanel(id); panel.hidden = false; backdrop.hidden = false; panel.querySelector(".x").focus(); }
 function closePanel() { state.openId = null; panel.hidden = true; backdrop.hidden = true; }
-const BUCKET_LABEL = { [BUCKET.WORKING]: ["Working now", "live"], [BUCKET.BLOCKED]: ["Needs you", "review"], [BUCKET.FAILED]: ["Stopped with an error", "blocked"] };
+const BUCKET_LABEL = { [BUCKET.WORKING]: ["Working now", "live"], [BUCKET.REVIEW]: ["Your turn", "review"], [BUCKET.BLOCKED]: ["Needs you", "review"], [BUCKET.FAILED]: ["Stopped with an error", "blocked"] };
 function sessionsHTML(id) {
   const L = live.byProject[id];
   if (live.status !== "on" && live.status !== "stale") return "";
