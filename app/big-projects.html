@@ -68,6 +68,25 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-cont
 .sign.cafe .n { font-weight: 700; letter-spacing: .03em; }
 .sign.cafe .s { color: #7a3a52; }
 .sign.cafe .s b { color: #e0368f; }
+.sign.live { border-color: var(--st-active); animation: livepulse 1.6s ease-in-out infinite; }
+.sign.live::before { content: "LIVE"; position: absolute; top: -1cqw; right: .9cqw; font: 800 .72cqw/1 var(--body); letter-spacing: .1em; background: #3ad67a; color: #062312; padding: .3cqw .55cqw; border-radius: .4cqw; box-shadow: 0 .2cqw 0 #0d1124; }
+.sign .s b.live { color: #6ee59a; }
+@keyframes livepulse { 50% { box-shadow: 0 0 0 .55cqw #52c47d40, 0 .4cqw 0 #0d1124, 0 .9cqw 1.4cqw #0007; } }
+@media (prefers-reduced-motion: reduce) { .sign.live, .livebar .pulse { animation: none; } }
+.livebar { margin-top: 10px; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-soft); background: #ffffff0b; border: 1px solid #ffffff17; border-radius: 999px; padding: 5px 12px 5px 10px; }
+.livebar .pulse { width: 9px; height: 9px; border-radius: 50%; background: #8e93a8; flex: none; }
+.livebar.on .pulse { background: #3ad67a; animation: blinkdot 1.6s ease-in-out infinite; }
+.livebar.warn .pulse { background: var(--st-review); }
+.livebar b { color: var(--ink); }
+.livebar button { font: 600 12.5px var(--body); color: #1b1420; background: var(--glow); border: 0; border-radius: 999px; padding: 4px 10px; cursor: pointer; }
+@keyframes blinkdot { 50% { opacity: .35; } }
+.chip.live { background: #3ad67a; color: #062312; }
+.sessions { display: flex; flex-direction: column; gap: 8px; }
+.sess { background: #12141d; border: 1px solid #2c3044; border-radius: 8px; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; }
+.sess .top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sess .ttl { font-weight: 600; font-size: 13.5px; color: var(--ink); min-width: 0; }
+.sess small { color: var(--ink-mute); font-size: 12px; }
+.sess a { color: var(--glow); font-size: 12.5px; font-weight: 600; text-decoration: none; }
 .hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: #ffffffa0; background: #0006; padding: 4px 9px; border-radius: 999px; pointer-events: none; }
 .fallback { padding: 40px 24px; text-align: center; color: var(--ink-soft); }
 @container (max-width: 760px) {
@@ -142,6 +161,7 @@ form.edit input:focus, form.edit textarea:focus { outline: 2px solid var(--glow)
     <div class="brand">
       <h1>Big Projects</h1>
       <p id="asof">Your Claude Code projects, one room each. Tap a room for its terminal.</p>
+      <div class="livebar" id="livebar" role="status"><span class="pulse"></span><span id="livetext">Connecting to your Claude Code sessions…</span></div>
     </div>
     <div class="legend" id="legend" aria-label="Project count by status"></div>
   </header>
@@ -245,7 +265,62 @@ function drawDunkin(c, w, h) {
 const state = { projects: {}, loaded: false, unavailable: false, db: null, canWrite: null, openId: null };
 const ICON_EXT = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3h4v4M13 3 7.5 8.5M12 9.5V13H3V4h3.5"/></svg>`;
 const ICON_TERM = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg>`;
-const parkedIds = () => PROJECT_IDS.filter((id) => state.projects[id] && state.projects[id].state === "parked");
+/* ---- live work: read your Claude Code sessions and match them to rooms ---- */
+const LIVE_SERVER = "Claude Code Remote";
+const BUCKET = { WORKING: "SESSION_STATUS_BUCKET_WORKING", BLOCKED: "SESSION_STATUS_BUCKET_BLOCKED", FAILED: "SESSION_STATUS_BUCKET_FAILED" };
+/* how a session is tied to a room: its title words, its repo, a tag, or its id. Overridable per room with a saved "match" field. */
+const DEFAULT_MATCH = {
+  jetstream: { keywords: ["jetstream"], ids: ["session_01YRg7c8DJLTu3yqc9yD7Fva", "session_0185S13zUE98aRRsNJ4xTwC4", "session_01DbEajHnxUwM1Rk7U8BeayU"] },
+  pace: { keywords: ["pace", "setyourpace"], repos: ["bnolandesign/pace-dashboard"] },
+  secondbrain: { keywords: ["second brain", "obsidian"] },
+  upwork: { keywords: ["upwork", "fiverr"] },
+  bnolan: { keywords: ["bndesign", "bnolan", "homepage", "portfolio"], tags: ["bndesign"], repos: ["bnolandesign/wordpress"] },
+  kw: { keywords: ["k&w", "kw", "hvac", "furnace", "google ads"], ids: ["session_01WB6ydhzAN1V6BduoHEP7Gz"] },
+};
+/* the session that built this dashboard touches the Pace repo but isn't Pace work */
+const EXCLUDE_IDS = new Set(["session_01Uc49CzhfRrEvmweExbf3rc"]);
+const live = { status: "starting", code: null, at: 0, byProject: {} };
+const reEsc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function sessionRepos(sn) {
+  const out = [];
+  ((sn.session_context && sn.session_context.sources) || []).forEach((x) => x.git_repository && x.git_repository.url && out.push(x.git_repository.url));
+  const em = sn.external_metadata || {};
+  Object.keys(em.current_branches || {}).forEach((k) => out.push(k));
+  Object.keys(em.worktree_state || {}).forEach((k) => out.push(k));
+  return out.join(" ").toLowerCase();
+}
+function sessionMatches(sn, id) {
+  if (EXCLUDE_IDS.has(sn.id)) return false;
+  const rule = (state.projects[id] && state.projects[id].match) || DEFAULT_MATCH[id] || {};
+  if ((rule.ids || []).includes(sn.id)) return true;
+  const tags = sn.tags || [];
+  if (tags.includes("project:" + id) || (rule.tags || []).some((t) => tags.includes(t))) return true;
+  const title = String(sn.title || "").toLowerCase();
+  if ((rule.keywords || []).some((k) => new RegExp("(^|[^a-z0-9])" + reEsc(String(k).toLowerCase()) + "($|[^a-z0-9])").test(title))) return true;
+  const repos = sessionRepos(sn);
+  return (rule.repos || []).some((r) => repos.includes(String(r).toLowerCase()));
+}
+function computeLive(sessions) {
+  const by = {};
+  PROJECT_IDS.forEach((id) => {
+    const list = sessions.filter((sn) => sn && sn.id && sessionMatches(sn, id)).sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+    by[id] = { list, working: list.filter((sn) => sn.status_bucket === BUCKET.WORKING), waiting: list.filter((sn) => sn.status_bucket === BUCKET.BLOCKED) };
+  });
+  live.byProject = by;
+}
+/* what a room shows: its saved status, unless one of its sessions is working right now */
+function viewOf(id) {
+  const p = state.projects[id], L = live.byProject[id];
+  if (L && L.working.length) return Object.assign({}, p || { name: PROJECTS[id].label }, { state: "active", live: true, liveSession: L.working[0], saved: p || null });
+  return p ? Object.assign({}, p, { saved: p }) : null;
+}
+function ago(iso) {
+  const t = typeof iso === "number" ? iso : Date.parse(iso); if (!t) return "";
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return s < 10 ? "just now" : s + "s ago"; const m = Math.round(s / 60); if (m < 60) return m + "m ago";
+  const h = Math.round(m / 60); if (h < 48) return h + "h ago"; return Math.round(h / 24) + "d ago";
+}
+const parkedIds = () => PROJECT_IDS.filter((id) => { const v = viewOf(id); return v && v.state === "parked"; });
 const nameOf = (id) => (state.projects[id] && state.projects[id].name) || PROJECTS[id].label;
 
 /* ============================================================ 3D building */
@@ -753,7 +828,7 @@ function buildWorld() {
     tickers.length = baseTickers; people.length = 0;
     for (const id of [...PROJECT_IDS, "cafe"]) { rooms[id].crew.clear(); rooms[id].extras.clear(); }
     for (const id of PROJECT_IDS) {
-      const r = rooms[id], p = state.projects[id], st = p ? p.state : "none";
+      const r = rooms[id], p = viewOf(id), st = p ? p.state : "none";
       const lit = st !== "parked";
       r.light.intensity = !lit ? 0 : st === "blocked" ? .6 : 1.0;
       r.screens.forEach((s) => s.material.color.set(lit ? "#ffffff" : "#2a2a36"));
@@ -763,6 +838,11 @@ function buildWorld() {
       if (r.boardTex) drawJetBoards(r, st);
       if (r.rocket) { r.flame.visible = st === "shipped"; r.rocket.position.y = .25; }
       const [cx, cz] = CENTER[id];
+      if (p && p.live) {
+        const gb = put(r.extras, geo("beacon", () => new T.SphereGeometry(.26, 14, 10, 0, Math.PI * 2, 0, Math.PI / 2)), mat("#3ad67a", { basic: true, fresh: true }), r.w * 5, r.row ? 1.34 : H_BACK + .14, r.row ? 0 : .1, { shadow: false });
+        const gl = new T.PointLight(0x3ad67a, .8, 10, 1.6); gl.position.set(r.w * 5, 3.5, 3); r.extras.add(gl);
+        tickers.push((t) => { const v = (Math.sin(t * 3) + 1) / 2; gl.intensity = .3 + v * .9; gb.scale.setScalar(1 + v * .25); });
+      }
       if (st === "active") {
         const n = id === "upwork" ? Math.max(1, Math.min(6, Number(p.seats) || 3)) : 3;
         r.desks.slice(0, n).forEach((d, i) => { const pp = person(id, i, "sit"); seat(pp, d.x, d.z); r.crew.add(pp.g); people.push(pp); });
@@ -809,7 +889,7 @@ function buildWorld() {
       redraw(sc.material.map, (c, w, h) => {
         c.fillStyle = "#0f1424"; c.fillRect(0, 0, w, h); if (!lit) return;
         if (id === "cafe") { c.fillStyle = "#ff8a4a"; c.fillRect(4, 4, w - 8, h - 8); c.fillStyle = "#fff3e8"; c.beginPath(); c.arc(w / 2, h / 2, 18, 0, 7); c.fill(); c.fillStyle = "#ff8a4a"; c.beginPath(); c.arc(w / 2, h / 2, 7, 0, 7); c.fill(); return; }
-        const p = state.projects[id]; c.fillStyle = p ? STATE_COLOR[p.state] : "#2b3045"; c.fillRect(4, 4, w - 8, h - 8);
+        const p = viewOf(id); c.fillStyle = p ? STATE_COLOR[p.state] : "#2b3045"; c.fillRect(4, 4, w - 8, h - 8);
         c.save(); c.translate(w / 2 - 18, h / 2 - 18); drawIcon(c, id, 36, "#ffffff", "#ffffff"); c.restore();
       });
     });
@@ -853,11 +933,13 @@ function buildWorld() {
         s.el.innerHTML = `<img src="${ICON_URL.cafe}" alt=""><span class="t"><span class="n">DUNKIN'</span><span class="s"><b>${n ? "Parked:" : "Open:"}</b> ${n ? n + (n > 1 ? " crews" : " crew") + " on break" : "no crews on break"}</span></span><span></span>`;
         s.el.style.setProperty("--chip", "#ff6fa3"); return;
       }
-      const p = state.projects[id];
-      const st = p ? `<b class="${esc(p.state)}">${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "")}` : state.unavailable ? "Status unavailable" : "Checking in…";
+      const p = viewOf(id);
+      const st = p && p.live ? `<b class="live">Working now:</b> ${esc(p.liveSession.title || "Claude is working")}`
+        : p ? `<b class="${esc(p.state)}">${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "")}` : state.unavailable ? "Status unavailable" : "Checking in…";
+      s.el.classList.toggle("live", !!(p && p.live));
       s.el.innerHTML = `<img src="${ICON_URL[id]}" alt=""><span class="t"><span class="n">${esc(nameOf(id))}</span><span class="s">${st}</span></span><span class="lk">${ICON_TERM}</span>`;
-      s.el.setAttribute("aria-label", `${nameOf(id)}${p ? ", " + STATE_LABEL[p.state] : ""}. Open details and terminal.`);
-      s.el.style.setProperty("--chip", p ? STATE_COLOR[p.state] : "#8e93a8");
+      s.el.setAttribute("aria-label", `${nameOf(id)}${p ? ", " + (p.live ? "working now" : STATE_LABEL[p.state]) : ""}. Open details and terminal.`);
+      s.el.style.setProperty("--chip", p ? (p.live ? "#3ad67a" : STATE_COLOR[p.state]) : "#8e93a8");
     });
   }
   function placeSigns() {
@@ -905,16 +987,23 @@ function buildWorld() {
   requestAnimationFrame(frame);
 
   outline(world);
-  return { update() { buildCrews(); outline(rooms.cafe.g); PROJECT_IDS.forEach((id) => outline(rooms[id].g)); paintMonitors(); fillSigns(); } };
+  let lastSig = null;
+  return { update() {
+    const sig = PROJECT_IDS.map((id) => { const v = viewOf(id); return v ? v.state + (v.live ? "*" : "") + (v.seats || "") : "-"; }).join("|");
+    if (sig !== lastSig) { lastSig = sig; buildCrews(); outline(rooms.cafe.g); PROJECT_IDS.forEach((id) => outline(rooms[id].g)); paintMonitors(); }
+    fillSigns();
+  } };
 }
 
 /* ============================================================ page: placards, legend, panel */
 const placardsEl = document.getElementById("placards");
 function placardHTML(id) {
-  const p = state.projects[id];
-  const chip = p ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : `<span class="chip none">—</span>`;
-  const step = p ? `<b>${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "No current step saved.")}` : state.unavailable ? "Status can't load in this view." : state.loaded ? "No status saved yet." : "Checking in…";
-  const open = p && p.sessionUrl ? `<a class="btn" href="${esc(p.sessionUrl)}" target="_blank" rel="noopener">${ICON_EXT}Open workspace</a>` : "";
+  const p = viewOf(id);
+  const chip = p && p.live ? `<span class="chip live">Working now</span>` : p ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : `<span class="chip none">—</span>`;
+  const step = p && p.live ? `<b>Working now:</b> ${esc(p.liveSession.title || "Claude is working")}${p.saved && p.saved.step ? `<br><span style="color:var(--ink-mute)">Last saved step: ${esc(p.saved.step)}</span>` : ""}`
+    : p ? `<b>${esc(STATE_LABEL[p.state])}:</b> ${esc(p.step || "No current step saved.")}` : state.unavailable ? "Status can't load in this view." : state.loaded ? "No status saved yet." : "Checking in…";
+  const openUrl = p && p.live ? "https://claude.ai/code/" + p.liveSession.id : p && p.sessionUrl;
+  const open = openUrl ? `<a class="btn" href="${esc(openUrl)}" target="_blank" rel="noopener">${ICON_EXT}Open workspace</a>` : "";
   return `<article class="placard"><div class="pl-head"><img src="${ICON_URL[id]}" alt=""><span class="pl-name">${esc(nameOf(id))}</span>${chip}</div>
     <p class="pl-step">${step}</p><div class="pl-actions">${open}<button class="btn ghost" type="button" data-open="${id}">${ICON_TERM}Terminal</button></div></article>`;
 }
@@ -925,21 +1014,56 @@ function render() {
      <p class="pl-step">${parked.length ? "On break here:" : state.loaded ? "No crews on break." : "Checking who's on break…"}</p>
      <div class="who">${parked.map((k) => `<span>${esc(nameOf(k))}</span>`).join("")}</div></article>`;
   const counts = {};
-  PROJECT_IDS.forEach((id) => { const p = state.projects[id]; if (p) counts[p.state] = (counts[p.state] || 0) + 1; });
+  PROJECT_IDS.forEach((id) => { const p = viewOf(id); if (p) counts[p.state] = (counts[p.state] || 0) + 1; });
   document.getElementById("legend").innerHTML = STATES.map((k) => `<span class="lg"><span class="dot ${k}"></span>${STATE_LABEL[k]} <b>${counts[k] || 0}</b></span>`).join("");
   const dates = PROJECT_IDS.map((id) => state.projects[id] && state.projects[id].updatedAt).filter(Boolean).sort();
   if (dates.length) {
     const d = new Date(dates[dates.length - 1] + "T12:00:00");
     document.getElementById("asof").textContent = `Your Claude Code projects, one room each. Last update ${d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}. Tap a room for its terminal.`;
   }
+  renderLiveBar();
   if (three) { try { three.update(); } catch (e) { console.error(e); } }
   if (state.openId) renderPanel(state.openId);
 }
+function renderLiveBar() {
+  const bar = document.getElementById("livebar"), txt = document.getElementById("livetext");
+  const working = PROJECT_IDS.filter((id) => { const v = viewOf(id); return v && v.live; });
+  bar.className = "livebar" + (live.status === "on" ? " on" : live.status === "stale" || live.status === "off" ? " warn" : "");
+  if (live.status === "on" || live.status === "stale") {
+    const names = working.map(nameOf).join(", ");
+    txt.innerHTML = `${live.status === "on" ? "<b>Live</b>" : "<b>Reconnecting…</b> showing the last check"} · checked ${esc(ago(live.at))} · ${working.length ? `<b>${working.length}</b> working now: ${esc(names)}` : "no project is working right now"}`;
+  } else if (live.status === "declined") {
+    txt.innerHTML = `Live updates are off. <button type="button" id="liveon">Turn on live updates</button>`;
+  } else if (live.status === "reauth") {
+    txt.textContent = "Live updates need Claude Code reconnected: claude.ai Settings → Connectors.";
+  } else if (live.status === "off") {
+    txt.textContent = "Live updates aren't available in this view. Saved statuses are shown.";
+  } else {
+    txt.textContent = "Connecting to your Claude Code sessions…";
+  }
+}
+setInterval(() => { if (live.status === "on" || live.status === "stale") renderLiveBar(); if (three) fillSignsSafe(); }, 15000);
+function fillSignsSafe() { try { three.update(); } catch {} }
 
 const panel = document.getElementById("panel"), backdrop = document.getElementById("backdrop");
 let draftState = null;
 function openPanel(id) { if (!PROJECTS[id]) return; state.openId = id; draftState = null; renderPanel(id); panel.hidden = false; backdrop.hidden = false; panel.querySelector(".x").focus(); }
 function closePanel() { state.openId = null; panel.hidden = true; backdrop.hidden = true; }
+const BUCKET_LABEL = { [BUCKET.WORKING]: ["Working now", "live"], [BUCKET.BLOCKED]: ["Needs you", "review"], [BUCKET.FAILED]: ["Stopped with an error", "blocked"] };
+function sessionsHTML(id) {
+  const L = live.byProject[id];
+  if (live.status !== "on" && live.status !== "stale") return "";
+  if (!L || !L.list.length) return `<div><h3>Claude Code sessions</h3><p style="font-size:13px">No sessions found for this room yet. A session shows up here when its title mentions this project, or when it's tagged <code>project:${esc(id)}</code>.</p></div>`;
+  return `<div><h3>Claude Code sessions</h3><div class="sessions">${L.list.slice(0, 5).map((sn) => {
+    const [lab, cls] = BUCKET_LABEL[sn.status_bucket] || ["Idle", "none"];
+    const pts = sn.post_turn_summary || {};
+    const note = sn.status_bucket === BUCKET.BLOCKED && pts.needs_action ? pts.needs_action : pts.status_detail || "";
+    return `<div class="sess"><div class="top"><span class="ttl">${esc(sn.title || "Untitled session")}</span><span class="chip ${cls}">${lab}</span></div>
+      ${note ? `<small>${esc(note)}</small>` : ""}
+      <div class="top"><small>Last activity ${esc(ago(sn.updated_at))}</small><a href="https://claude.ai/code/${esc(sn.id)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
+  }).join("")}</div></div>`;
+}
+function liveCmd(id) { const L = live.byProject[id]; const sn = L && L.working[0]; return sn && sn.environment_kind !== "bridge" ? "claude --teleport " + sn.id : ""; }
 function renderPanel(id) {
   const p = state.projects[id] || {};
   const st = draftState || p.state;
@@ -950,9 +1074,10 @@ function renderPanel(id) {
   const focusId = document.activeElement && document.activeElement.id;
   panel.innerHTML = `
     <div class="row"><h2 id="panel-title">${esc(nameOf(id))}</h2><button class="x" type="button" aria-label="Close">×</button></div>
-    <div>${p.state ? `<span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : ""}<p style="margin-top:10px">${esc(p.step || "No current step saved.")}</p></div>
-    <div><h3>Terminal</h3><div class="term"><code id="cmd">${esc(p.command || "claude")}</code>
-      <div class="row"><small>${esc(p.commandNote || "Paste into Terminal on your Mac to pick this project up there.")}</small><button class="btn" type="button" id="copy">Copy</button></div></div></div>
+    <div>${p.state ? `<span style="font-size:12px;color:var(--ink-mute);margin-right:6px">Saved status</span><span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : ""}<p style="margin-top:10px">${esc(p.step || "No current step saved.")}</p></div>
+    ${sessionsHTML(id)}
+    <div><h3>Terminal</h3><div class="term"><code id="cmd">${esc(liveCmd(id) || p.command || "claude")}</code>
+      <div class="row"><small>${esc(liveCmd(id) ? "Pulls the session that's working right now into Terminal on your Mac." : p.commandNote || "Paste into Terminal on your Mac to pick this project up there.")}</small><button class="btn" type="button" id="copy">Copy</button></div></div></div>
     ${links.length ? `<div><h3>Links</h3><div class="links">${links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div></div>` : ""}
     ${p.updatedAt ? `<p style="font-size:12.5px;color:var(--ink-mute)">Updated ${esc(p.updatedAt)}</p>` : ""}
     ${editable ? `<form class="edit" id="edit">
@@ -995,7 +1120,7 @@ panel.addEventListener("submit", async (e) => {
 });
 backdrop.addEventListener("click", closePanel);
 document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !panel.hidden) closePanel(); });
-document.addEventListener("click", (e) => { const t = e.target.closest("[data-open]"); if (t && t.dataset.open && !panel.contains(t)) openPanel(t.dataset.open); });
+document.addEventListener("click", (e) => { if (e.target.closest("#liveon")) { turnOnLive(); return; } const t = e.target.closest("[data-open]"); if (t && t.dataset.open && !panel.contains(t)) openPanel(t.dataset.open); });
 
 let toastTimer;
 function toast(text) { const t = document.getElementById("toast"); t.textContent = text; t.hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => (t.hidden = true), 2600); }
@@ -1012,7 +1137,43 @@ async function connect() {
     state.projects = next; state.loaded = true; render();
   }, () => { state.unavailable = true; render(); });
 }
+let unwatch = null;
+const DENIED = ["not_in_manifest", "not_granted", "capability_disabled", "capability_removed", "blocked_by_policy", "approval_required", "server_not_connected", "selection_required", "consent_required", "needs_reauth"];
+function readSessions(payload) {
+  let pl = payload;
+  if (typeof pl === "string") { const i = pl.indexOf("{"); try { pl = JSON.parse(pl.slice(i, pl.lastIndexOf("}") + 1)); } catch { pl = null; } }
+  if (!pl) return null;
+  const list = (pl.ccr && pl.ccr.data) || pl.data || pl.sessions || (Array.isArray(pl) ? pl : null);
+  return Array.isArray(list) ? list : null;
+}
+async function startLive() {
+  if (!window.claude || !window.claude.use) { live.status = "off"; render(); return; }
+  const mcp = await window.claude.use("mcp");
+  if (!mcp) { live.status = "off"; render(); return; }
+  if (unwatch) unwatch();
+  unwatch = mcp.watchTool(LIVE_SERVER, "list_sessions", { limit: 50, mine: true }, (ev) => {
+    if (ev.type === "data") {
+      const list = readSessions(ev.result.payload);
+      if (!list) { live.status = "stale"; render(); return; }
+      computeLive(list); live.status = "on"; live.at = (ev.result.cache && ev.result.cache.storedAt) || Date.now(); render();
+    } else {
+      const c = ev.error && ev.error.code;
+      if (DENIED.includes(c)) { live.byProject = {}; live.status = c === "needs_reauth" ? "reauth" : c === "not_in_manifest" || c === "consent_required" ? "declined" : "off"; }
+      else if (live.status === "on") live.status = "stale";
+      render();
+    }
+  }, { refetchInterval: 30000, cache: { staleTime: 15000 } });
+}
+async function turnOnLive() {
+  try { const perms = await window.claude.use("permissions"); if (perms) await perms.request(["mcp:" + LIVE_SERVER]); } catch {}
+  live.status = "starting"; render(); startLive();
+}
+document.addEventListener("visibilitychange", async () => {
+  if (document.visibilityState !== "visible" || live.status !== "on") return;
+  try { const mcp = await window.claude.use("mcp"); if (mcp) await mcp.invalidate(LIVE_SERVER, "list_sessions"); } catch {}
+});
 render();
 connect();
+startLive();
 })();
 </script>
