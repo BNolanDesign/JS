@@ -1110,6 +1110,15 @@ function sessionsHTML(id) {
 }
 const startedFor = {};
 const TASK_HINT = { jetstream: "e.g. Run today's job search and score the new picks", pace: "e.g. Write the W3-D brief for per-person Gmail and Calendar", secondbrain: "e.g. Plan the structure for my Second Brain", upwork: "e.g. Draft a job post for my first designer", bnolan: "e.g. Fix the homepage hero on mobile Safari", kw: "e.g. Build the October leads report" };
+/* when a page can't start sessions itself: copy a ready-made first message and open Claude Code */
+function fallbackText(id, task) { return `${PROJECTS[id].label}: ${task}\n\n${reportRule(id)}`; }
+function showFallback(id, task) {
+  const f = document.getElementById("start"); if (!f || document.getElementById("fallback-box")) return;
+  const box = document.createElement("div"); box.id = "fallback-box"; box.className = "started";
+  box.innerHTML = `Start it yourself in two clicks: <button class="btn" type="button" id="copystart">Copy first message</button> then <a href="https://claude.ai/code" target="_blank" rel="noopener">open Claude Code ↗</a> and paste it into a new session.${REPO[id] ? ` Pick the <b>${esc(REPO[id].split("/").pop())}</b> repo.` : ""}`;
+  box.dataset.text = fallbackText(id, task);
+  f.after(box);
+}
 function liveCmd(id) { const L = live.byProject[id]; const sn = L && L.working[0]; return sn && sn.environment_kind !== "bridge" ? "claude --teleport " + sn.id : ""; }
 function renderPanel(id) {
   const p = state.projects[id] || {};
@@ -1150,6 +1159,12 @@ function renderPanel(id) {
 }
 panel.addEventListener("click", async (e) => {
   if (e.target.closest(".x")) return closePanel();
+  if (e.target.closest("#copystart")) {
+    const t = document.getElementById("fallback-box").dataset.text;
+    try { await navigator.clipboard.writeText(t); toast("Copied. Paste it into a new Claude Code session."); }
+    catch { toast("Couldn't copy automatically. Select the text and copy it."); }
+    return;
+  }
   if (e.target.closest("#copy")) {
     const el = document.getElementById("cmd");
     try { await navigator.clipboard.writeText(el.textContent); toast("Copied. Paste it into Terminal."); }
@@ -1171,10 +1186,13 @@ panel.addEventListener("submit", async (e) => {
       else { m.textContent = "Started. It will show up in your Claude Code sessions in a moment."; }
     } catch (err) {
       const c = err && err.code;
-      m.textContent = c === "needs_reauth" ? "Reconnect Claude Code in claude.ai Settings → Connectors, then try again."
-        : c === "not_in_manifest" || c === "consent_required" || c === "not_granted" ? "This page isn't allowed to start sessions yet. Allow Claude Code for this page and try again."
-        : c === "tool_error" ? "Claude Code refused to start it: " + (err.message || "unknown reason")
-        : "Couldn't start it. Your session may still have been created, so check Claude Code before trying again.";
+      const why = c === "needs_reauth" ? "Claude Code needs reconnecting in claude.ai Settings → Connectors."
+        : c === "not_in_manifest" || c === "consent_required" || c === "not_granted" ? "This page isn't allowed to start sessions yet."
+        : c === "approval_required" || c === "blocked_by_policy" ? "Your account doesn't let pages start sessions directly."
+        : c === "tool_error" ? "Claude Code refused: " + (err.message || "no reason given") + "."
+        : "It couldn't start directly.";
+      m.textContent = `${why} (${c || "unknown"}${err && err.message && c !== "tool_error" ? ": " + String(err.message).slice(0, 160) : ""})`;
+      showFallback(id, task);
       btn.disabled = false;
     }
     return;
