@@ -87,6 +87,12 @@ header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-cont
 .sess .ttl { font-weight: 600; font-size: 13.5px; color: var(--ink); min-width: 0; }
 .sess small { color: var(--ink-mute); font-size: 12px; }
 .sess a { color: var(--glow); font-size: 12.5px; font-weight: 600; text-decoration: none; }
+form.startf { display: flex; flex-direction: column; gap: 8px; }
+form.startf textarea { font: 14px/1.4 var(--body); color: var(--ink); background: #11131c; border: 1px solid #353950; border-radius: 6px; padding: 8px 10px; width: 100%; min-height: 70px; resize: vertical; }
+form.startf textarea:focus { outline: 2px solid var(--glow); outline-offset: 0; }
+form.startf small { color: var(--ink-mute); font-size: 12px; }
+.started { background: #12261a; border: 1px solid #2f7a4a; border-radius: 8px; padding: 10px 12px; font-size: 13.5px; color: var(--ink); }
+.started a { color: #7ff0a8; font-weight: 700; text-decoration: none; }
 .hint { position: absolute; right: 12px; bottom: 10px; font-size: 12px; color: #ffffffa0; background: #0006; padding: 4px 9px; border-radius: 999px; pointer-events: none; }
 .fallback { padding: 40px 24px; text-align: center; color: var(--ink-soft); }
 @container (max-width: 760px) {
@@ -267,6 +273,38 @@ const ICON_EXT = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" str
 const ICON_TERM = `<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="2.5" width="13" height="11" rx="2"/><path d="m4.5 6.5 2 1.8-2 1.8M8.5 10.5h3"/></svg>`;
 /* ---- live work: read your Claude Code sessions and match them to rooms ---- */
 const LIVE_SERVER = "Claude Code Remote";
+/* starting work from a room: a cloud session in Brennan's environment, named and tagged for the room */
+const ARTIFACT_URL = "https://claude.ai/artifact/Lo5ogFvsP6QpxzmsUzLiAB";
+const ENV_ID = "env_01Ld8mUr5n1XutGGVRLuvpti";
+const REPO = { jetstream: "https://github.com/BNolanDesign/JS", pace: "https://github.com/BNolanDesign/pace-dashboard", bnolan: "https://github.com/BNolanDesign/WordPress" };
+const MAC_NOTE = {
+  pace: "Deploys and anything that needs your Cloudflare login run on your Mac. A cloud session can still write briefs and code on a branch.",
+  jetstream: "Filling in applications needs your Chrome, so start those on your Mac. Research, scoring and tracker work run fine in the cloud.",
+};
+function reportRule(id) {
+  return [
+    `This session works on the "${PROJECTS[id].label}" project, which is one room on Brennan's Big Projects dashboard (${ARTIFACT_URL}).`,
+    `Keep that room's sign current. Whenever you finish a piece of work, or stop because you need Brennan, update the document "${id}" in the "projects" collection of that artifact's database with the ArtifactData tool (read it first and pass its version as if_version).`,
+    `Change only these fields: "state" (one of active, blocked, review, shipped, parked), "step" (one plain sentence on where things stand now, written for Brennan), and "updatedAt" (today's date as YYYY-MM-DD).`,
+    `Use blocked when you are waiting on Brennan or something outside your control, review when finished work needs his OK, shipped when it is live or delivered, and active while work is moving.`,
+  ].join(" ");
+}
+async function startWork(id, task) {
+  const mcp = await window.claude.use("mcp");
+  if (!mcp) throw { code: "not_granted" };
+  const input = {
+    title: (PROJECTS[id].label + ": " + task).slice(0, 120),
+    prompt: task,
+    tags: ["project:" + id, "big-projects"],
+    environment_id: ENV_ID,
+    append_system_prompt: reportRule(id),
+  };
+  if (REPO[id]) input.source_url = REPO[id];
+  const res = await mcp.callTool(LIVE_SERVER, "create_session", input);
+  const m = JSON.stringify(res.payload !== undefined ? res.payload : res.content).match(/session_[A-Za-z0-9]+/);
+  try { await mcp.invalidate(LIVE_SERVER, "list_sessions"); } catch {}
+  return m ? m[0] : null;
+}
 const BUCKET = { WORKING: "SESSION_STATUS_BUCKET_WORKING", BLOCKED: "SESSION_STATUS_BUCKET_BLOCKED", FAILED: "SESSION_STATUS_BUCKET_FAILED", REVIEW: "SESSION_STATUS_BUCKET_REVIEW_READY" };
 /* a session that answered within this window and is waiting on you still counts as being worked on */
 const RECENT_MS = 20 * 60 * 1000;
@@ -1055,7 +1093,7 @@ function fillSignsSafe() { try { three.update(); } catch {} }
 const panel = document.getElementById("panel"), backdrop = document.getElementById("backdrop");
 let draftState = null;
 function openPanel(id) { if (!PROJECTS[id]) return; state.openId = id; draftState = null; renderPanel(id); panel.hidden = false; backdrop.hidden = false; panel.querySelector(".x").focus(); }
-function closePanel() { state.openId = null; panel.hidden = true; backdrop.hidden = true; }
+function closePanel() { panel.dataset.room = ""; state.openId = null; panel.hidden = true; backdrop.hidden = true; }
 const BUCKET_LABEL = { [BUCKET.WORKING]: ["Working now", "live"], [BUCKET.REVIEW]: ["Your turn", "review"], [BUCKET.BLOCKED]: ["Needs you", "review"], [BUCKET.FAILED]: ["Stopped with an error", "blocked"] };
 function sessionsHTML(id) {
   const L = live.byProject[id];
@@ -1070,6 +1108,8 @@ function sessionsHTML(id) {
       <div class="top"><small>Last activity ${esc(ago(sn.updated_at))}</small><a href="https://claude.ai/code/${esc(sn.id)}" target="_blank" rel="noopener">Open ↗</a></div></div>`;
   }).join("")}</div></div>`;
 }
+const startedFor = {};
+const TASK_HINT = { jetstream: "e.g. Run today's job search and score the new picks", pace: "e.g. Write the W3-D brief for per-person Gmail and Calendar", secondbrain: "e.g. Plan the structure for my Second Brain", upwork: "e.g. Draft a job post for my first designer", bnolan: "e.g. Fix the homepage hero on mobile Safari", kw: "e.g. Build the October leads report" };
 function liveCmd(id) { const L = live.byProject[id]; const sn = L && L.working[0]; return sn && sn.environment_kind !== "bridge" ? "claude --teleport " + sn.id : ""; }
 function renderPanel(id) {
   const p = state.projects[id] || {};
@@ -1079,10 +1119,20 @@ function renderPanel(id) {
   (p.links || []).forEach((l) => l && l.url && links.push(l));
   const editable = state.db && state.canWrite !== false;
   const focusId = document.activeElement && document.activeElement.id;
+  /* keep whatever the viewer is typing when live updates redraw the panel */
+  const typed = {};
+  if (panel.dataset.room === id) ["f-task", "f-step", "f-url", "f-cmd"].forEach((k) => { const el = document.getElementById(k); if (el) typed[k] = el.value; });
+  panel.dataset.room = id;
   panel.innerHTML = `
     <div class="row"><h2 id="panel-title">${esc(nameOf(id))}</h2><button class="x" type="button" aria-label="Close">×</button></div>
     <div>${p.state ? `<span style="font-size:12px;color:var(--ink-mute);margin-right:6px">Saved status</span><span class="chip ${esc(p.state)}">${esc(STATE_LABEL[p.state])}</span>` : ""}<p style="margin-top:10px">${esc(p.step || "No current step saved.")}</p></div>
     ${sessionsHTML(id)}
+    ${state.db ? `<div><h3>Start work</h3>${startedFor[id] ? `<div class="started">Session started. <a href="https://claude.ai/code/${esc(startedFor[id])}" target="_blank" rel="noopener">Open it in Claude Code ↗</a> The room lights up within a minute.</div>` : `<form class="startf" id="start">
+      <label for="f-task" style="font-size:12.5px;font-weight:600;color:var(--ink-soft)">What should Claude work on?</label>
+      <textarea id="f-task" placeholder="${esc(TASK_HINT[id] || "Describe the next piece of work")}"></textarea>
+      ${MAC_NOTE[id] ? `<small>${esc(MAC_NOTE[id])}</small>` : ""}
+      <div class="row"><span class="msg" id="smsg">Starts a cloud session named for this room. It updates this sign when it finishes.</span><button class="btn" type="submit">Start session</button></div>
+    </form>`}</div>` : ""}
     <div><h3>Terminal</h3><div class="term"><code id="cmd">${esc(liveCmd(id) || p.command || "claude")}</code>
       <div class="row"><small>${esc(liveCmd(id) ? "Pulls the session that's working right now into Terminal on your Mac." : p.commandNote || "Paste into Terminal on your Mac to pick this project up there.")}</small><button class="btn" type="button" id="copy">Copy</button></div></div></div>
     ${links.length ? `<div><h3>Links</h3><div class="links">${links.map((l) => `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.label)} ↗</a>`).join("")}</div></div>` : ""}
@@ -1095,6 +1145,7 @@ function renderPanel(id) {
       <label for="f-cmd">Terminal command<input id="f-cmd" value="${esc(p.command || "")}" placeholder="claude --teleport session_…"></label>
       <div class="row"><span class="msg" id="msg"></span><button class="btn" type="submit">Save</button></div>
     </form>` : ""}`;
+  Object.entries(typed).forEach(([k, v]) => { const el = document.getElementById(k); if (el) el.value = v; });
   if (focusId && document.getElementById(focusId)) document.getElementById(focusId).focus();
 }
 panel.addEventListener("click", async (e) => {
@@ -1110,6 +1161,24 @@ panel.addEventListener("click", async (e) => {
 });
 panel.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if (e.target.id === "start") {
+    const id = state.openId, task = document.getElementById("f-task").value.trim(), m = document.getElementById("smsg"), btn = e.target.querySelector("button");
+    if (!task) { m.textContent = "Say what Claude should work on first."; return; }
+    btn.disabled = true; m.textContent = "Starting a session…";
+    try {
+      const sid = await startWork(id, task);
+      if (sid) { startedFor[id] = sid; renderPanel(id); toast(`${nameOf(id)} session started.`); }
+      else { m.textContent = "Started. It will show up in your Claude Code sessions in a moment."; }
+    } catch (err) {
+      const c = err && err.code;
+      m.textContent = c === "needs_reauth" ? "Reconnect Claude Code in claude.ai Settings → Connectors, then try again."
+        : c === "not_in_manifest" || c === "consent_required" || c === "not_granted" ? "This page isn't allowed to start sessions yet. Allow Claude Code for this page and try again."
+        : c === "tool_error" ? "Claude Code refused to start it: " + (err.message || "unknown reason")
+        : "Couldn't start it. Your session may still have been created, so check Claude Code before trying again.";
+      btn.disabled = false;
+    }
+    return;
+  }
   const id = state.openId, p = state.projects[id] || {}, msg = document.getElementById("msg");
   const next = JSON.parse(JSON.stringify(p));
   next.state = draftState || p.state || "active";
